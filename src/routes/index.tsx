@@ -218,10 +218,9 @@ function HowItWorks() {
         {steps.map((s, i) => (
           <motion.div
             key={s.title}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5, delay: i * 0.1 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 + i * 0.08 }}
             className="relative rounded-2xl border border-border bg-card p-7 shadow-sm"
           >
             <div className="grid size-11 place-items-center rounded-xl bg-primary-soft text-primary">
@@ -233,6 +232,7 @@ function HowItWorks() {
           </motion.div>
         ))}
       </div>
+
     </section>
   );
 }
