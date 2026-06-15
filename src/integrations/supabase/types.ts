@@ -314,6 +314,10 @@ export type Database = {
         Args: { _ngo_id: string; _user_id: string }
         Returns: boolean
       }
+      self_assign_initial_role: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
