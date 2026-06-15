@@ -14,16 +14,321 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
+      ngos: {
+        Row: {
+          address: string | null
+          approved_at: string | null
+          approved_by: string | null
+          city: string | null
+          contact_email: string
+          contact_phone: string | null
+          country: string | null
+          created_at: string
+          description: string | null
+          focus_areas: string[] | null
+          id: string
+          name: string
+          owner_id: string
+          registration_number: string | null
+          rejection_reason: string | null
+          state: string | null
+          status: Database["public"]["Enums"]["ngo_status"]
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          city?: string | null
+          contact_email: string
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          focus_areas?: string[] | null
+          id?: string
+          name: string
+          owner_id: string
+          registration_number?: string | null
+          rejection_reason?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["ngo_status"]
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          city?: string | null
+          contact_email?: string
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          focus_areas?: string[] | null
+          id?: string
+          name?: string
+          owner_id?: string
+          registration_number?: string | null
+          rejection_reason?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["ngo_status"]
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      survivor_documents: {
+        Row: {
+          created_at: string
+          doc_type: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          survivor_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          doc_type: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          survivor_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          survivor_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survivor_documents_survivor_id_fkey"
+            columns: ["survivor_id"]
+            isOneToOne: false
+            referencedRelation: "survivors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survivors: {
+        Row: {
+          accommodation_needs: string | null
+          age: number | null
+          anonymous_id: string
+          city: string | null
+          country: string | null
+          created_at: string
+          created_by: string
+          education_level: string | null
+          email: string | null
+          emergency_contact: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          languages: string[] | null
+          ngo_id: string
+          notes: string | null
+          phone: string | null
+          preferred_industries: string[] | null
+          preferred_locations: string[] | null
+          preferred_roles: string[] | null
+          profile_completion: number
+          rejection_reason: string | null
+          skills: string[] | null
+          state: string | null
+          status: Database["public"]["Enums"]["survivor_status"]
+          updated_at: string
+        }
+        Insert: {
+          accommodation_needs?: string | null
+          age?: number | null
+          anonymous_id?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by: string
+          education_level?: string | null
+          email?: string | null
+          emergency_contact?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          languages?: string[] | null
+          ngo_id: string
+          notes?: string | null
+          phone?: string | null
+          preferred_industries?: string[] | null
+          preferred_locations?: string[] | null
+          preferred_roles?: string[] | null
+          profile_completion?: number
+          rejection_reason?: string | null
+          skills?: string[] | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["survivor_status"]
+          updated_at?: string
+        }
+        Update: {
+          accommodation_needs?: string | null
+          age?: number | null
+          anonymous_id?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string
+          education_level?: string | null
+          email?: string | null
+          emergency_contact?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          languages?: string[] | null
+          ngo_id?: string
+          notes?: string | null
+          phone?: string | null
+          preferred_industries?: string[] | null
+          preferred_locations?: string[] | null
+          preferred_roles?: string[] | null
+          profile_completion?: number
+          rejection_reason?: string | null
+          skills?: string[] | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["survivor_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survivors_ngo_id_fkey"
+            columns: ["ngo_id"]
+            isOneToOne: false
+            referencedRelation: "ngos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      owns_approved_ngo: {
+        Args: { _ngo_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "ngo_partner"
+        | "survivor"
+        | "recruiter"
+      ngo_status: "pending" | "approved" | "rejected" | "suspended"
+      survivor_status:
+        | "draft"
+        | "submitted"
+        | "under_review"
+        | "approved"
+        | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +455,22 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "super_admin",
+        "admin",
+        "ngo_partner",
+        "survivor",
+        "recruiter",
+      ],
+      ngo_status: ["pending", "approved", "rejected", "suspended"],
+      survivor_status: [
+        "draft",
+        "submitted",
+        "under_review",
+        "approved",
+        "rejected",
+      ],
+    },
   },
 } as const
