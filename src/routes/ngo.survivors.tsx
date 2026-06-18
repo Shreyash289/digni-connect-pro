@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,8 @@ import { StatusBadge } from "./ngo.dashboard";
 const NGO_NAV = [
   { to: "/ngo/dashboard", label: "Dashboard" },
   { to: "/ngo/survivors", label: "Survivors" },
+  { to: "/ngo/requests", label: "Intro requests" },
+  { to: "/ngo/analytics", label: "Analytics" },
   { to: "/ngo/organization", label: "Organization" },
 ];
 
@@ -86,7 +88,11 @@ function Inner() {
             <tbody className="divide-y divide-border">
               {survivors.map((s) => (
                 <tr key={s.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3 font-medium">{s.full_name}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link to="/ngo/survivors/$id" params={{ id: s.id }} className="hover:text-accent">
+                      {s.full_name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{s.anonymous_id}</td>
                   <td className="px-4 py-3 text-muted-foreground">{[s.city, s.state].filter(Boolean).join(", ") || "—"}</td>
                   <td className="px-4 py-3">

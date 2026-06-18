@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, dashboardPathFor, type AppRole } from "@/hooks/useAuth";
 import { Logo } from "@/components/brand/Logo";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { Button } from "@/components/ui/button";
 
 interface PortalShellProps {
@@ -56,7 +57,10 @@ export function PortalShell({ title, nav, allow, children }: PortalShellProps) {
           ))}
         </nav>
         <div className="mt-auto border-t border-sidebar-border pt-3">
-          <div className="px-3 py-1 text-xs text-sidebar-foreground/70 truncate">{user.email}</div>
+          <div className="flex items-center justify-between px-3 py-1">
+            <span className="text-xs text-sidebar-foreground/70 truncate">{user.email}</span>
+            <NotificationBell />
+          </div>
           <Button
             variant="ghost"
             size="sm"

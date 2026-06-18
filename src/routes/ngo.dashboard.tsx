@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 const NGO_NAV = [
   { to: "/ngo/dashboard", label: "Dashboard" },
   { to: "/ngo/survivors", label: "Survivors" },
+  { to: "/ngo/requests", label: "Intro requests" },
+  { to: "/ngo/analytics", label: "Analytics" },
   { to: "/ngo/organization", label: "Organization" },
 ];
 

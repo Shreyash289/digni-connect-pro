@@ -73,5 +73,7 @@ export function dashboardPathFor(roles: AppRole[]): string {
   const p = primaryRole(roles);
   if (p === "super_admin" || p === "admin") return "/admin";
   if (p === "ngo_partner") return "/ngo";
+  if (p === "recruiter") return "/recruiter";
+  if (p === "survivor") return "/mentor";
   return "/onboarding";
 }

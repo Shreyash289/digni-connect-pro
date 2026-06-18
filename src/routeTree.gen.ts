@@ -12,13 +12,29 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RecruiterIndexRouteImport } from './routes/recruiter.index'
 import { Route as NgoIndexRouteImport } from './routes/ngo.index'
+import { Route as MentorIndexRouteImport } from './routes/mentor.index'
+import { Route as JobsIndexRouteImport } from './routes/jobs.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
+import { Route as RecruiterSearchRouteImport } from './routes/recruiter.search'
+import { Route as RecruiterRequestsRouteImport } from './routes/recruiter.requests'
+import { Route as RecruiterJobsRouteImport } from './routes/recruiter.jobs'
+import { Route as RecruiterAnalyticsRouteImport } from './routes/recruiter.analytics'
 import { Route as NgoSurvivorsRouteImport } from './routes/ngo.survivors'
+import { Route as NgoRequestsRouteImport } from './routes/ngo.requests'
 import { Route as NgoOrganizationRouteImport } from './routes/ngo.organization'
 import { Route as NgoDashboardRouteImport } from './routes/ngo.dashboard'
+import { Route as NgoAnalyticsRouteImport } from './routes/ngo.analytics'
+import { Route as MentorThreadIdRouteImport } from './routes/mentor.$threadId'
+import { Route as JobsIdRouteImport } from './routes/jobs.$id'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as AdminRecruitersRouteImport } from './routes/admin.recruiters'
 import { Route as AdminNgosRouteImport } from './routes/admin.ngos'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
+import { Route as NgoSurvivorsIdRouteImport } from './routes/ngo.survivors.$id'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -35,9 +51,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecruiterIndexRoute = RecruiterIndexRouteImport.update({
+  id: '/recruiter/',
+  path: '/recruiter/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NgoIndexRoute = NgoIndexRouteImport.update({
   id: '/ngo/',
   path: '/ngo/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentorIndexRoute = MentorIndexRouteImport.update({
+  id: '/mentor/',
+  path: '/mentor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JobsIndexRoute = JobsIndexRouteImport.update({
+  id: '/jobs/',
+  path: '/jobs/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -45,9 +76,39 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsNotificationsRoute = SettingsNotificationsRouteImport.update({
+  id: '/settings/notifications',
+  path: '/settings/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecruiterSearchRoute = RecruiterSearchRouteImport.update({
+  id: '/recruiter/search',
+  path: '/recruiter/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecruiterRequestsRoute = RecruiterRequestsRouteImport.update({
+  id: '/recruiter/requests',
+  path: '/recruiter/requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecruiterJobsRoute = RecruiterJobsRouteImport.update({
+  id: '/recruiter/jobs',
+  path: '/recruiter/jobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecruiterAnalyticsRoute = RecruiterAnalyticsRouteImport.update({
+  id: '/recruiter/analytics',
+  path: '/recruiter/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NgoSurvivorsRoute = NgoSurvivorsRouteImport.update({
   id: '/ngo/survivors',
   path: '/ngo/survivors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NgoRequestsRoute = NgoRequestsRouteImport.update({
+  id: '/ngo/requests',
+  path: '/ngo/requests',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NgoOrganizationRoute = NgoOrganizationRouteImport.update({
@@ -60,6 +121,31 @@ const NgoDashboardRoute = NgoDashboardRouteImport.update({
   path: '/ngo/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NgoAnalyticsRoute = NgoAnalyticsRouteImport.update({
+  id: '/ngo/analytics',
+  path: '/ngo/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentorThreadIdRoute = MentorThreadIdRouteImport.update({
+  id: '/mentor/$threadId',
+  path: '/mentor/$threadId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JobsIdRoute = JobsIdRouteImport.update({
+  id: '/jobs/$id',
+  path: '/jobs/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRecruitersRoute = AdminRecruitersRouteImport.update({
+  id: '/admin/recruiters',
+  path: '/admin/recruiters',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminNgosRoute = AdminNgosRouteImport.update({
   id: '/admin/ngos',
   path: '/admin/ngos',
@@ -70,43 +156,101 @@ const AdminDashboardRoute = AdminDashboardRouteImport.update({
   path: '/admin/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/admin/analytics',
+  path: '/admin/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NgoSurvivorsIdRoute = NgoSurvivorsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => NgoSurvivorsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/ngos': typeof AdminNgosRoute
+  '/admin/recruiters': typeof AdminRecruitersRoute
+  '/api/chat': typeof ApiChatRoute
+  '/jobs/$id': typeof JobsIdRoute
+  '/mentor/$threadId': typeof MentorThreadIdRoute
+  '/ngo/analytics': typeof NgoAnalyticsRoute
   '/ngo/dashboard': typeof NgoDashboardRoute
   '/ngo/organization': typeof NgoOrganizationRoute
-  '/ngo/survivors': typeof NgoSurvivorsRoute
+  '/ngo/requests': typeof NgoRequestsRoute
+  '/ngo/survivors': typeof NgoSurvivorsRouteWithChildren
+  '/recruiter/analytics': typeof RecruiterAnalyticsRoute
+  '/recruiter/jobs': typeof RecruiterJobsRoute
+  '/recruiter/requests': typeof RecruiterRequestsRoute
+  '/recruiter/search': typeof RecruiterSearchRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
   '/admin/': typeof AdminIndexRoute
+  '/jobs/': typeof JobsIndexRoute
+  '/mentor/': typeof MentorIndexRoute
   '/ngo/': typeof NgoIndexRoute
+  '/recruiter/': typeof RecruiterIndexRoute
+  '/ngo/survivors/$id': typeof NgoSurvivorsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/ngos': typeof AdminNgosRoute
+  '/admin/recruiters': typeof AdminRecruitersRoute
+  '/api/chat': typeof ApiChatRoute
+  '/jobs/$id': typeof JobsIdRoute
+  '/mentor/$threadId': typeof MentorThreadIdRoute
+  '/ngo/analytics': typeof NgoAnalyticsRoute
   '/ngo/dashboard': typeof NgoDashboardRoute
   '/ngo/organization': typeof NgoOrganizationRoute
-  '/ngo/survivors': typeof NgoSurvivorsRoute
+  '/ngo/requests': typeof NgoRequestsRoute
+  '/ngo/survivors': typeof NgoSurvivorsRouteWithChildren
+  '/recruiter/analytics': typeof RecruiterAnalyticsRoute
+  '/recruiter/jobs': typeof RecruiterJobsRoute
+  '/recruiter/requests': typeof RecruiterRequestsRoute
+  '/recruiter/search': typeof RecruiterSearchRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
   '/admin': typeof AdminIndexRoute
+  '/jobs': typeof JobsIndexRoute
+  '/mentor': typeof MentorIndexRoute
   '/ngo': typeof NgoIndexRoute
+  '/recruiter': typeof RecruiterIndexRoute
+  '/ngo/survivors/$id': typeof NgoSurvivorsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/ngos': typeof AdminNgosRoute
+  '/admin/recruiters': typeof AdminRecruitersRoute
+  '/api/chat': typeof ApiChatRoute
+  '/jobs/$id': typeof JobsIdRoute
+  '/mentor/$threadId': typeof MentorThreadIdRoute
+  '/ngo/analytics': typeof NgoAnalyticsRoute
   '/ngo/dashboard': typeof NgoDashboardRoute
   '/ngo/organization': typeof NgoOrganizationRoute
-  '/ngo/survivors': typeof NgoSurvivorsRoute
+  '/ngo/requests': typeof NgoRequestsRoute
+  '/ngo/survivors': typeof NgoSurvivorsRouteWithChildren
+  '/recruiter/analytics': typeof RecruiterAnalyticsRoute
+  '/recruiter/jobs': typeof RecruiterJobsRoute
+  '/recruiter/requests': typeof RecruiterRequestsRoute
+  '/recruiter/search': typeof RecruiterSearchRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
   '/admin/': typeof AdminIndexRoute
+  '/jobs/': typeof JobsIndexRoute
+  '/mentor/': typeof MentorIndexRoute
   '/ngo/': typeof NgoIndexRoute
+  '/recruiter/': typeof RecruiterIndexRoute
+  '/ngo/survivors/$id': typeof NgoSurvivorsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,50 +258,113 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/onboarding'
+    | '/admin/analytics'
     | '/admin/dashboard'
     | '/admin/ngos'
+    | '/admin/recruiters'
+    | '/api/chat'
+    | '/jobs/$id'
+    | '/mentor/$threadId'
+    | '/ngo/analytics'
     | '/ngo/dashboard'
     | '/ngo/organization'
+    | '/ngo/requests'
     | '/ngo/survivors'
+    | '/recruiter/analytics'
+    | '/recruiter/jobs'
+    | '/recruiter/requests'
+    | '/recruiter/search'
+    | '/settings/notifications'
     | '/admin/'
+    | '/jobs/'
+    | '/mentor/'
     | '/ngo/'
+    | '/recruiter/'
+    | '/ngo/survivors/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/onboarding'
+    | '/admin/analytics'
     | '/admin/dashboard'
     | '/admin/ngos'
+    | '/admin/recruiters'
+    | '/api/chat'
+    | '/jobs/$id'
+    | '/mentor/$threadId'
+    | '/ngo/analytics'
     | '/ngo/dashboard'
     | '/ngo/organization'
+    | '/ngo/requests'
     | '/ngo/survivors'
+    | '/recruiter/analytics'
+    | '/recruiter/jobs'
+    | '/recruiter/requests'
+    | '/recruiter/search'
+    | '/settings/notifications'
     | '/admin'
+    | '/jobs'
+    | '/mentor'
     | '/ngo'
+    | '/recruiter'
+    | '/ngo/survivors/$id'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/onboarding'
+    | '/admin/analytics'
     | '/admin/dashboard'
     | '/admin/ngos'
+    | '/admin/recruiters'
+    | '/api/chat'
+    | '/jobs/$id'
+    | '/mentor/$threadId'
+    | '/ngo/analytics'
     | '/ngo/dashboard'
     | '/ngo/organization'
+    | '/ngo/requests'
     | '/ngo/survivors'
+    | '/recruiter/analytics'
+    | '/recruiter/jobs'
+    | '/recruiter/requests'
+    | '/recruiter/search'
+    | '/settings/notifications'
     | '/admin/'
+    | '/jobs/'
+    | '/mentor/'
     | '/ngo/'
+    | '/recruiter/'
+    | '/ngo/survivors/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminNgosRoute: typeof AdminNgosRoute
+  AdminRecruitersRoute: typeof AdminRecruitersRoute
+  ApiChatRoute: typeof ApiChatRoute
+  JobsIdRoute: typeof JobsIdRoute
+  MentorThreadIdRoute: typeof MentorThreadIdRoute
+  NgoAnalyticsRoute: typeof NgoAnalyticsRoute
   NgoDashboardRoute: typeof NgoDashboardRoute
   NgoOrganizationRoute: typeof NgoOrganizationRoute
-  NgoSurvivorsRoute: typeof NgoSurvivorsRoute
+  NgoRequestsRoute: typeof NgoRequestsRoute
+  NgoSurvivorsRoute: typeof NgoSurvivorsRouteWithChildren
+  RecruiterAnalyticsRoute: typeof RecruiterAnalyticsRoute
+  RecruiterJobsRoute: typeof RecruiterJobsRoute
+  RecruiterRequestsRoute: typeof RecruiterRequestsRoute
+  RecruiterSearchRoute: typeof RecruiterSearchRoute
+  SettingsNotificationsRoute: typeof SettingsNotificationsRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  JobsIndexRoute: typeof JobsIndexRoute
+  MentorIndexRoute: typeof MentorIndexRoute
   NgoIndexRoute: typeof NgoIndexRoute
+  RecruiterIndexRoute: typeof RecruiterIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -183,11 +390,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recruiter/': {
+      id: '/recruiter/'
+      path: '/recruiter'
+      fullPath: '/recruiter/'
+      preLoaderRoute: typeof RecruiterIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ngo/': {
       id: '/ngo/'
       path: '/ngo'
       fullPath: '/ngo/'
       preLoaderRoute: typeof NgoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentor/': {
+      id: '/mentor/'
+      path: '/mentor'
+      fullPath: '/mentor/'
+      preLoaderRoute: typeof MentorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jobs/': {
+      id: '/jobs/'
+      path: '/jobs'
+      fullPath: '/jobs/'
+      preLoaderRoute: typeof JobsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -197,11 +425,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/notifications': {
+      id: '/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof SettingsNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recruiter/search': {
+      id: '/recruiter/search'
+      path: '/recruiter/search'
+      fullPath: '/recruiter/search'
+      preLoaderRoute: typeof RecruiterSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recruiter/requests': {
+      id: '/recruiter/requests'
+      path: '/recruiter/requests'
+      fullPath: '/recruiter/requests'
+      preLoaderRoute: typeof RecruiterRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recruiter/jobs': {
+      id: '/recruiter/jobs'
+      path: '/recruiter/jobs'
+      fullPath: '/recruiter/jobs'
+      preLoaderRoute: typeof RecruiterJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recruiter/analytics': {
+      id: '/recruiter/analytics'
+      path: '/recruiter/analytics'
+      fullPath: '/recruiter/analytics'
+      preLoaderRoute: typeof RecruiterAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ngo/survivors': {
       id: '/ngo/survivors'
       path: '/ngo/survivors'
       fullPath: '/ngo/survivors'
       preLoaderRoute: typeof NgoSurvivorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ngo/requests': {
+      id: '/ngo/requests'
+      path: '/ngo/requests'
+      fullPath: '/ngo/requests'
+      preLoaderRoute: typeof NgoRequestsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ngo/organization': {
@@ -218,6 +488,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NgoDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ngo/analytics': {
+      id: '/ngo/analytics'
+      path: '/ngo/analytics'
+      fullPath: '/ngo/analytics'
+      preLoaderRoute: typeof NgoAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentor/$threadId': {
+      id: '/mentor/$threadId'
+      path: '/mentor/$threadId'
+      fullPath: '/mentor/$threadId'
+      preLoaderRoute: typeof MentorThreadIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jobs/$id': {
+      id: '/jobs/$id'
+      path: '/jobs/$id'
+      fullPath: '/jobs/$id'
+      preLoaderRoute: typeof JobsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/recruiters': {
+      id: '/admin/recruiters'
+      path: '/admin/recruiters'
+      fullPath: '/admin/recruiters'
+      preLoaderRoute: typeof AdminRecruitersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/ngos': {
       id: '/admin/ngos'
       path: '/admin/ngos'
@@ -232,21 +537,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/admin/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ngo/survivors/$id': {
+      id: '/ngo/survivors/$id'
+      path: '/$id'
+      fullPath: '/ngo/survivors/$id'
+      preLoaderRoute: typeof NgoSurvivorsIdRouteImport
+      parentRoute: typeof NgoSurvivorsRoute
+    }
   }
 }
+
+interface NgoSurvivorsRouteChildren {
+  NgoSurvivorsIdRoute: typeof NgoSurvivorsIdRoute
+}
+
+const NgoSurvivorsRouteChildren: NgoSurvivorsRouteChildren = {
+  NgoSurvivorsIdRoute: NgoSurvivorsIdRoute,
+}
+
+const NgoSurvivorsRouteWithChildren = NgoSurvivorsRoute._addFileChildren(
+  NgoSurvivorsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminNgosRoute: AdminNgosRoute,
+  AdminRecruitersRoute: AdminRecruitersRoute,
+  ApiChatRoute: ApiChatRoute,
+  JobsIdRoute: JobsIdRoute,
+  MentorThreadIdRoute: MentorThreadIdRoute,
+  NgoAnalyticsRoute: NgoAnalyticsRoute,
   NgoDashboardRoute: NgoDashboardRoute,
   NgoOrganizationRoute: NgoOrganizationRoute,
-  NgoSurvivorsRoute: NgoSurvivorsRoute,
+  NgoRequestsRoute: NgoRequestsRoute,
+  NgoSurvivorsRoute: NgoSurvivorsRouteWithChildren,
+  RecruiterAnalyticsRoute: RecruiterAnalyticsRoute,
+  RecruiterJobsRoute: RecruiterJobsRoute,
+  RecruiterRequestsRoute: RecruiterRequestsRoute,
+  RecruiterSearchRoute: RecruiterSearchRoute,
+  SettingsNotificationsRoute: SettingsNotificationsRoute,
   AdminIndexRoute: AdminIndexRoute,
+  JobsIndexRoute: JobsIndexRoute,
+  MentorIndexRoute: MentorIndexRoute,
   NgoIndexRoute: NgoIndexRoute,
+  RecruiterIndexRoute: RecruiterIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

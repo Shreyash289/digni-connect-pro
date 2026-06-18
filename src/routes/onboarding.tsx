@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { HeartHandshake, Building2, LogOut } from "lucide-react";
+import { HeartHandshake, Building2, Briefcase, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, dashboardPathFor, type AppRole } from "@/hooks/useAuth";
 import { Logo } from "@/components/brand/Logo";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/onboarding")({
 function Onboarding() {
   const { user, roles, loading } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"role" | "ngo">("role");
+  const [step, setStep] = useState<"role" | "ngo" | "recruiter">("role");
   const [chosen, setChosen] = useState<AppRole | null>(null);
 
   useEffect(() => {
@@ -56,14 +56,23 @@ function Onboarding() {
             onPick={(r) => {
               setChosen(r);
               if (r === "ngo_partner") setStep("ngo");
+              else if (r === "recruiter") setStep("recruiter");
               else void grantRoleAndGo(r, navigate);
             }}
           />
-        ) : (
+        ) : step === "ngo" ? (
           <NgoForm
             onDone={async () => {
               if (!chosen) return;
               await grantRoleAndGo(chosen, navigate);
+            }}
+            onBack={() => setStep("role")}
+          />
+        ) : (
+          <RecruiterForm
+            onDone={async () => {
+              toast.success("Recruiter application submitted for review.");
+              navigate({ to: "/recruiter" });
             }}
             onBack={() => setStep("role")}
           />
@@ -103,7 +112,7 @@ function RoleChooser({ onPick }: { onPick: (r: AppRole) => void }) {
       <p className="mt-2 text-muted-foreground">
         Choose how you'll use the platform. You can be invited to more roles later.
       </p>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <RoleCard
           icon={HeartHandshake}
           title="NGO Partner"
@@ -112,16 +121,23 @@ function RoleChooser({ onPick }: { onPick: (r: AppRole) => void }) {
           onClick={() => onPick("ngo_partner")}
         />
         <RoleCard
+          icon={Briefcase}
+          title="Recruiter"
+          body="I hire ethically and want to discover consented, anonymized survivor profiles through NGO introductions."
+          cta="Continue as Recruiter"
+          onClick={() => onPick("recruiter")}
+        />
+        <RoleCard
           icon={Building2}
-          title="I'm just exploring"
-          body="Set up a personal account. You can request NGO partner or recruiter access later from an admin."
-          cta="Continue as guest"
+          title="Survivor / exploring"
+          body="Set up a personal account with access to the AI career mentor."
+          cta="Continue as survivor"
           onClick={() => onPick("survivor")}
           subtle
         />
       </div>
       <p className="mt-6 text-xs text-muted-foreground">
-        Recruiter and Admin roles are granted by the CAREVIA team after verification.
+        Admin roles are granted by the CAREVIA team after verification.
       </p>
     </div>
   );
@@ -252,4 +268,45 @@ function Field({
 
 function CenteredMessage({ children }: { children: React.ReactNode }) {
   return <div className="grid min-h-screen place-items-center text-muted-foreground">{children}</div>;
+}
+
+function RecruiterForm({ onDone, onBack }: { onDone: () => void; onBack: () => void }) {
+  const [form, setForm] = useState({ company_name: "", company_website: "" });
+  const [saving, setSaving] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    const { error } = await supabase.rpc("self_assign_recruiter_role", {
+      _company_name: form.company_name,
+      _company_website: form.company_website || null,
+    });
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    onDone();
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-5">
+      <div>
+        <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
+          ← Back
+        </button>
+        <h1 className="mt-2 font-display text-3xl font-bold text-primary">Register as recruiter</h1>
+        <p className="mt-2 text-muted-foreground">
+          Your account will be reviewed by CAREVIA before you can search survivors.
+        </p>
+      </div>
+      <div className="grid gap-4 rounded-2xl border border-border bg-card p-6">
+        <Field label="Company name *" v={form.company_name} on={(v) => setForm({ ...form, company_name: v })} required />
+        <Field label="Company website" v={form.company_website} on={(v) => setForm({ ...form, company_website: v })} />
+      </div>
+      <Button type="submit" disabled={saving}>
+        {saving ? "Submitting…" : "Submit for review"}
+      </Button>
+    </form>
+  );
 }
