@@ -1,4 +1,12 @@
-export function renderErrorPage(): string {
+export function renderErrorPage(error?: unknown): string {
+  const errorDetails = error
+    ? error instanceof Error
+      ? `${error.name}: ${error.message}\n\nStack:\n${error.stack}`
+      : typeof error === "object"
+        ? JSON.stringify(error, null, 2)
+        : String(error)
+    : "No detailed error captured.";
+
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -7,13 +15,14 @@ export function renderErrorPage(): string {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: #fafafa; color: #111; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
-      .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem; }
+      .card { max-width: 36rem; width: 100%; text-align: center; padding: 2rem; }
       h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
       p { color: #4b5563; margin: 0 0 1.5rem; }
-      .actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+      .actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
       a, button { padding: 0.5rem 1rem; border-radius: 0.375rem; font: inherit; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
       .primary { background: #111; color: #fff; }
       .secondary { background: #fff; color: #111; border-color: #d1d5db; }
+      pre { text-align: left; background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; font-family: monospace; font-size: 13px; border: 1px solid #fca5a5; max-height: 300px; }
     </style>
   </head>
   <body>
@@ -23,6 +32,10 @@ export function renderErrorPage(): string {
       <div class="actions">
         <button class="primary" onclick="location.reload()">Try again</button>
         <a class="secondary" href="/">Go home</a>
+      </div>
+      <div style="margin-top: 2rem;">
+        <h3 style="text-align: left; font-size: 14px; margin-bottom: 0.5rem;">Diagnostic Error Details:</h3>
+        <pre>${errorDetails}</pre>
       </div>
     </div>
   </body>
