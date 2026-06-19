@@ -30,6 +30,8 @@ import { Route as NgoAnalyticsRouteImport } from './routes/ngo.analytics'
 import { Route as MentorThreadIdRouteImport } from './routes/mentor.$threadId'
 import { Route as JobsIdRouteImport } from './routes/jobs.$id'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminRequestsRouteImport } from './routes/admin.requests'
 import { Route as AdminRecruitersRouteImport } from './routes/admin.recruiters'
 import { Route as AdminNgosRouteImport } from './routes/admin.ngos'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
@@ -141,6 +143,16 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRequestsRoute = AdminRequestsRouteImport.update({
+  id: '/admin/requests',
+  path: '/admin/requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRecruitersRoute = AdminRecruitersRouteImport.update({
   id: '/admin/recruiters',
   path: '/admin/recruiters',
@@ -175,6 +187,8 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/ngos': typeof AdminNgosRoute
   '/admin/recruiters': typeof AdminRecruitersRoute
+  '/admin/requests': typeof AdminRequestsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/api/chat': typeof ApiChatRoute
   '/jobs/$id': typeof JobsIdRoute
   '/mentor/$threadId': typeof MentorThreadIdRoute
@@ -203,6 +217,8 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/ngos': typeof AdminNgosRoute
   '/admin/recruiters': typeof AdminRecruitersRoute
+  '/admin/requests': typeof AdminRequestsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/api/chat': typeof ApiChatRoute
   '/jobs/$id': typeof JobsIdRoute
   '/mentor/$threadId': typeof MentorThreadIdRoute
@@ -232,6 +248,8 @@ export interface FileRoutesById {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/ngos': typeof AdminNgosRoute
   '/admin/recruiters': typeof AdminRecruitersRoute
+  '/admin/requests': typeof AdminRequestsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/api/chat': typeof ApiChatRoute
   '/jobs/$id': typeof JobsIdRoute
   '/mentor/$threadId': typeof MentorThreadIdRoute
@@ -262,6 +280,8 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/ngos'
     | '/admin/recruiters'
+    | '/admin/requests'
+    | '/admin/users'
     | '/api/chat'
     | '/jobs/$id'
     | '/mentor/$threadId'
@@ -290,6 +310,8 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/ngos'
     | '/admin/recruiters'
+    | '/admin/requests'
+    | '/admin/users'
     | '/api/chat'
     | '/jobs/$id'
     | '/mentor/$threadId'
@@ -318,6 +340,8 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/ngos'
     | '/admin/recruiters'
+    | '/admin/requests'
+    | '/admin/users'
     | '/api/chat'
     | '/jobs/$id'
     | '/mentor/$threadId'
@@ -347,6 +371,8 @@ export interface RootRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminNgosRoute: typeof AdminNgosRoute
   AdminRecruitersRoute: typeof AdminRecruitersRoute
+  AdminRequestsRoute: typeof AdminRequestsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   ApiChatRoute: typeof ApiChatRoute
   JobsIdRoute: typeof JobsIdRoute
   MentorThreadIdRoute: typeof MentorThreadIdRoute
@@ -516,6 +542,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/requests': {
+      id: '/admin/requests'
+      path: '/admin/requests'
+      fullPath: '/admin/requests'
+      preLoaderRoute: typeof AdminRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/recruiters': {
       id: '/admin/recruiters'
       path: '/admin/recruiters'
@@ -574,6 +614,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
   AdminNgosRoute: AdminNgosRoute,
   AdminRecruitersRoute: AdminRecruitersRoute,
+  AdminRequestsRoute: AdminRequestsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   ApiChatRoute: ApiChatRoute,
   JobsIdRoute: JobsIdRoute,
   MentorThreadIdRoute: MentorThreadIdRoute,

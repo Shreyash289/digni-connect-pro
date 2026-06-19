@@ -8,6 +8,8 @@ const ADMIN_NAV = [
   { to: "/admin/dashboard", label: "Overview" },
   { to: "/admin/ngos", label: "NGO approvals" },
   { to: "/admin/recruiters", label: "Recruiters" },
+  { to: "/admin/requests", label: "Requests" },
+  { to: "/admin/users", label: "Users" },
   { to: "/admin/analytics", label: "Analytics" },
 ];
 

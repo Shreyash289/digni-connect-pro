@@ -66,6 +66,9 @@ function SiteHeader() {
           <Link to="/auth">
             <Button variant="ghost" size="sm">Sign in</Button>
           </Link>
+          <Link to="/auth" search={{ mode: "signin" }}>
+            <Button variant="outline" size="sm">Admin</Button>
+          </Link>
           <Link to="/auth" search={{ mode: "signup" }}>
             <Button size="sm">Get started</Button>
           </Link>

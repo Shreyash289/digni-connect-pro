@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { dashboardPathFor, type AppRole } from "@/hooks/useAuth";
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -68,6 +69,15 @@ function AuthPage() {
   );
 }
 
+async function loadRoles(userId: string): Promise<AppRole[]> {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (error) throw error;
+  return (data ?? []).map((r) => r.role as AppRole);
+}
+
 function SignInForm() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -78,13 +88,24 @@ function SignInForm() {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
       return;
     }
+
+    const { data: userResp } = await supabase.auth.getUser();
+    const userId = userResp.user?.id;
+    if (!userId) {
+      setLoading(false);
+      toast.error("Unable to load user session. Please try again.");
+      return;
+    }
+
+    const roles = await loadRoles(userId);
+    setLoading(false);
     toast.success("Welcome back!");
-    navigate({ to: "/onboarding" });
+    navigate({ to: dashboardPathFor(roles) });
   }
 
   return (
@@ -97,6 +118,9 @@ function SignInForm() {
         <Label htmlFor="password">Password</Label>
         <Input id="password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
+      <p className="text-sm text-muted-foreground">
+        If you have admin access, sign in with your admin credentials to manage approvals and review pending requests.
+      </p>
       <Button type="submit" disabled={loading} className="w-full">
         {loading ? "Signing in…" : "Sign in"}
       </Button>
