@@ -1,0 +1,1 @@
+import{A as e}from"./QueryClientProvider-BPrkxai8.js";import{r as t,t as n}from"./auth-middleware-BgfDGz07.js";var r=t({method:`POST`}).middleware([n]).handler(e(`cec961d6bfac801b3a68e637813e8cc50f8beba4c2d2d98ed99a6b2dbc992d98`)),i=t({method:`POST`}).middleware([n]).handler(e(`10168707f826b5e8e54808aba2070948c8b2fb5ddd7006123ad782c227604c98`));export{i as n,r as t};

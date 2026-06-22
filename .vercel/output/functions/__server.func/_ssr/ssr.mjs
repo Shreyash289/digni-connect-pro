@@ -58,14 +58,17 @@ function renderErrorPage(error) {
 }
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./server-D0l2dZHo.mjs").then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./server-CRjGB6Ge.mjs").then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
-async function normalizeCatastrophicSsrResponse(response) {
+async function normalizeCatastrophicSsrResponse(request, response) {
 	if (response.status < 500) return response;
-	if (!(response.headers.get("content-type") ?? "").includes("application/json")) return response;
+	if (!(request.headers.get("accept") ?? "").includes("text/html")) return response;
+	const contentType = response.headers.get("content-type") ?? "";
 	const body = await response.clone().text();
-	if (!body.includes("\"unhandled\":true") || !body.includes("\"message\":\"HTTPError\"")) return response;
+	const bodyLooksLikeSwallowedH3Error = body.includes("\"unhandled\":true") || body.includes("\"message\":\"HTTPError\"") || body.includes("\"message\":\"H3Error\"") || body.includes("HTTPError");
+	if (!contentType.includes("application/json") && !bodyLooksLikeSwallowedH3Error) return response;
+	if (!bodyLooksLikeSwallowedH3Error) return response;
 	const error = consumeLastCapturedError() ?? /* @__PURE__ */ new Error(`h3 swallowed SSR error: ${body}`);
 	console.error(error);
 	return new Response(renderErrorPage(error), {
@@ -75,7 +78,7 @@ async function normalizeCatastrophicSsrResponse(response) {
 }
 var server_default = { async fetch(request, env, ctx) {
 	try {
-		return await normalizeCatastrophicSsrResponse(await (await getServerEntry()).fetch(request, env, ctx));
+		return await normalizeCatastrophicSsrResponse(request, await (await getServerEntry()).fetch(request, env, ctx));
 	} catch (error) {
 		console.error(error);
 		return new Response(renderErrorPage(error), {
