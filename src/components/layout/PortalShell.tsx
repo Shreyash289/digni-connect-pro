@@ -15,11 +15,12 @@ interface PortalShellProps {
 }
 
 export function PortalShell({ title, nav, allow, children }: PortalShellProps) {
-  const { user, roles, loading } = useAuth();
+  const { user, roles, loading, error } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (loading) return;
+    if (error) return;
     if (!user) {
       navigate({ to: "/auth" });
       return;
@@ -31,10 +32,24 @@ export function PortalShell({ title, nav, allow, children }: PortalShellProps) {
     if (!roles.some((r) => allow.includes(r))) {
       navigate({ to: dashboardPathFor(roles) });
     }
-  }, [user, roles, loading, navigate, allow]);
+  }, [user, roles, loading, error, navigate, allow]);
 
   if (loading || !user || roles.length === 0) {
     return <div className="grid min-h-screen place-items-center text-muted-foreground">Loading…</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="grid min-h-screen place-items-center px-6 text-center text-sm text-destructive">
+        <div className="max-w-md rounded-2xl border border-destructive/20 bg-destructive/5 p-8">
+          <p className="font-semibold text-foreground">Unable to load your session.</p>
+          <p className="mt-2 text-muted-foreground">{error}</p>
+          <div className="mt-4">
+            <Button onClick={() => navigate({ to: "/auth" })}>Sign in again</Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

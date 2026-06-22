@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Building2, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { PortalShell } from "@/components/layout/PortalShell";
 
 const ADMIN_NAV = [
@@ -27,8 +28,11 @@ function AdminDashboard() {
 }
 
 function Inner() {
-  const { data, isLoading } = useQuery({
+  const { user } = useAuth();
+
+  const { data, error, isLoading } = useQuery({
     queryKey: ["admin-overview"],
+    enabled: !!user,
     queryFn: async () => {
       const [ngos, survivors] = await Promise.all([
         supabase.from("ngos").select("id,status", { count: "exact" }),
@@ -44,8 +48,21 @@ function Inner() {
     },
   });
 
-  if (isLoading || !data) {
+  if (!user || isLoading) {
     return <div className="grid place-items-center py-24"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (error) {
+    return (
+      <div className="grid place-items-center py-24 text-center text-sm text-destructive">
+        <p>Unable to load admin overview.</p>
+        <p className="mt-2 text-muted-foreground">Please refresh the page or sign out and sign in again.</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <div className="grid place-items-center py-24 text-muted-foreground">No admin data available.</div>;
   }
 
   const cards = [

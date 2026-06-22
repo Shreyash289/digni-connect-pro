@@ -9,49 +9,74 @@ export interface AuthState {
   session: Session | null;
   roles: AppRole[];
   loading: boolean;
+  error: string | null;
+  reload: () => Promise<void>;
 }
 
 export function useAuth(): AuthState {
-  const [state, setState] = useState<AuthState>({
+  const [state, setState] = useState<Omit<AuthState, "reload">>({
     user: null,
     session: null,
     roles: [],
     loading: true,
+    error: null,
   });
+
+  async function loadRoles(userId: string): Promise<AppRole[]> {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+
+    if (error) {
+      throw error;
+    }
+
+    return (data ?? []).map((r) => r.role as AppRole);
+  }
+
+  async function handleSession(session: Session | null) {
+    if (!session) {
+      setState({ user: null, session: null, roles: [], loading: false, error: null });
+      return;
+    }
+
+    setState((s) => ({ ...s, user: session.user, session, loading: true, error: null }));
+    try {
+      const roles = await loadRoles(session.user.id);
+      setState({ user: session.user, session, roles, loading: false, error: null });
+    } catch (error) {
+      console.error(error);
+      setState({
+        user: session.user,
+        session,
+        roles: [],
+        loading: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  async function reload() {
+    const { data: { session } } = await supabase.auth.getSession();
+    await handleSession(session);
+  }
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadRoles(userId: string): Promise<AppRole[]> {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-      return (data ?? []).map((r) => r.role as AppRole);
-    }
-
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       if (!session) {
-        setState({ user: null, session: null, roles: [], loading: false });
+        setState({ user: null, session: null, roles: [], loading: false, error: null });
         return;
       }
-      setState((s) => ({ ...s, user: session.user, session, loading: true }));
-      // Defer the roles query to avoid deadlocking inside the auth callback.
-      setTimeout(async () => {
-        const roles = await loadRoles(session.user.id);
-        if (mounted) setState({ user: session.user, session, roles, loading: false });
-      }, 0);
+      void handleSession(session);
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    void supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
-      if (!session) {
-        setState({ user: null, session: null, roles: [], loading: false });
-        return;
-      }
-      const roles = await loadRoles(session.user.id);
-      if (mounted) setState({ user: session.user, session, roles, loading: false });
+      await handleSession(session);
     });
 
     return () => {
@@ -60,7 +85,10 @@ export function useAuth(): AuthState {
     };
   }, []);
 
-  return state;
+  return {
+    ...state,
+    reload,
+  };
 }
 
 export function primaryRole(roles: AppRole[]): AppRole | null {

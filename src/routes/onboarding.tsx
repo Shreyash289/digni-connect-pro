@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { HeartHandshake, Building2, Briefcase, LogOut } from "lucide-react";
+import { HeartHandshake, Building2, Briefcase, ShieldCheck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, dashboardPathFor, type AppRole } from "@/hooks/useAuth";
+import { requestAdminSignupRole } from "@/lib/admin.functions";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/onboarding")({
 function Onboarding() {
   const { user, roles, loading } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"role" | "ngo" | "recruiter">("role");
+  const [step, setStep] = useState<"role" | "ngo" | "recruiter" | "admin">("role");
   const [chosen, setChosen] = useState<AppRole | null>(null);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ function Onboarding() {
               setChosen(r);
               if (r === "ngo_partner") setStep("ngo");
               else if (r === "recruiter") setStep("recruiter");
+              else if (r === "admin") setStep("admin");
               else void grantRoleAndGo(r, navigate);
             }}
           />
@@ -65,6 +67,14 @@ function Onboarding() {
             onDone={async () => {
               if (!chosen) return;
               await grantRoleAndGo(chosen, navigate);
+            }}
+            onBack={() => setStep("role")}
+          />
+        ) : step === "admin" ? (
+          <AdminSignupForm
+            onDone={async () => {
+              toast.success("Admin access granted.");
+              navigate({ to: "/admin" });
             }}
             onBack={() => setStep("role")}
           />
@@ -105,6 +115,57 @@ async function grantRoleAndGo(
   navigate({ to: dashboardPathFor([role]) });
 }
 
+function AdminSignupForm({ onDone, onBack }: { onDone: () => void; onBack: () => void }) {
+  const { reload } = useAuth();
+  const [inviteCode, setInviteCode] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    if (!inviteCode.trim()) {
+      toast.error("Please enter your admin signup code.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await requestAdminSignupRole({ inviteCode: inviteCode.trim() });
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    // Reload auth state to pick up the new admin role
+    await reload();
+    onDone();
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-5">
+      <div>
+        <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
+          ← Back
+        </button>
+        <h1 className="mt-2 font-display text-3xl font-bold text-primary">Request admin access</h1>
+        <p className="mt-2 text-muted-foreground">
+          Enter your invitation code to verify admin access and unlock the CAREVIA admin dashboard.
+        </p>
+      </div>
+      <div className="grid gap-4 rounded-2xl border border-border bg-card p-6">
+        <Field
+          label="Admin invite code *"
+          v={inviteCode}
+          on={setInviteCode}
+          required
+        />
+      </div>
+      <Button type="submit" disabled={saving}>
+        {saving ? "Verifying…" : "Verify code"}
+      </Button>
+    </form>
+  );
+}
+
 function RoleChooser({ onPick }: { onPick: (r: AppRole) => void }) {
   return (
     <div>
@@ -119,6 +180,13 @@ function RoleChooser({ onPick }: { onPick: (r: AppRole) => void }) {
           body="I represent an NGO and want to onboard survivors, manage their profiles, and track placements."
           cta="Continue as NGO Partner"
           onClick={() => onPick("ngo_partner")}
+        />
+        <RoleCard
+          icon={ShieldCheck}
+          title="Admin"
+          body="I manage approvals, review requests, and support the CAREVIA team with platform oversight."
+          cta="Request admin access"
+          onClick={() => onPick("admin")}
         />
         <RoleCard
           icon={Briefcase}
@@ -151,7 +219,7 @@ function RoleCard({
   onClick,
   subtle,
 }: {
-  icon: typeof HeartHandshake;
+  icon: typeof HeartHandshake | typeof ShieldCheck;
   title: string;
   body: string;
   cta: string;
