@@ -7,7 +7,10 @@ export const DEFAULT_EMBED_MODEL = "text-embedding-004";
 function getApiKey(): string {
   const key =
     process.env.GEMINI_API_KEY ??
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ??
+    // Vite-prefixed fallback for local development
+    process.env.VITE_GEMINI_API_KEY ??
+    process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY;
   if (!key) {
     throw new Error(
       "GEMINI_API_KEY is not configured. Add it to your .env file.",
