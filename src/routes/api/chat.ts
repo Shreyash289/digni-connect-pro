@@ -36,9 +36,19 @@ export const Route = createFileRoute("/api/chat")({
 
         const token = authHeader.replace("Bearer ", "");
         const { createClient } = await import("@supabase/supabase-js");
+        const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+        const SUPABASE_PUBLISHABLE_KEY =
+          process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+          throw new Error(
+            "Missing Supabase environment variable(s): SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY. " +
+              "Set them in production or provide VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY for preview."
+          );
+        }
+
         const supabase = createClient(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_PUBLISHABLE_KEY!,
+          SUPABASE_URL,
+          SUPABASE_PUBLISHABLE_KEY,
           {
             global: { headers: { Authorization: `Bearer ${token}` } },
             auth: { persistSession: false, autoRefreshToken: false },
