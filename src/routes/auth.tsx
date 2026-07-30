@@ -133,6 +133,7 @@ function SignUpForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<AppRole>("survivor");
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -142,8 +143,8 @@ function SignUpForm() {
       return;
     }
     setLoading(true);
-    const redirectUrl = `${window.location.origin}/onboarding`;
-    const { error } = await supabase.auth.signUp({
+    const redirectUrl = `${window.location.origin}/onboarding?role=${role}`;
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -156,8 +157,16 @@ function SignUpForm() {
       toast.error(error.message);
       return;
     }
-    toast.success("Account created. Let's choose your role.");
-    navigate({ to: "/onboarding" });
+
+    if (data?.session) {
+      toast.success("Account created. Continue onboarding.");
+      navigate({ to: `/onboarding?role=${role}` });
+      return;
+    }
+
+    toast.success(
+      "Account created. Check your email to confirm your account, then sign in to continue onboarding.",
+    );
   }
 
   return (
@@ -165,6 +174,20 @@ function SignUpForm() {
       <div className="space-y-2">
         <Label htmlFor="full_name">Full name</Label>
         <Input id="full_name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="role">Account type</Label>
+        <select
+          id="role"
+          value={role}
+          onChange={(e) => setRole(e.target.value as AppRole)}
+          className="mt-2 block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10"
+        >
+          <option value="survivor">Survivor / exploring</option>
+          <option value="ngo_partner">NGO Partner</option>
+          <option value="recruiter">Recruiter</option>
+          <option value="admin">Admin</option>
+        </select>
       </div>
       <div className="space-y-2">
         <Label htmlFor="email2">Email</Label>

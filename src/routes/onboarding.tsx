@@ -1,6 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { HeartHandshake, Building2, Briefcase, ShieldCheck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, dashboardPathFor, type AppRole } from "@/hooks/useAuth";
@@ -11,7 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+const onboardingSearchSchema = z.object({
+  role: z.enum(["admin", "ngo_partner", "survivor", "recruiter"]).optional(),
+});
+
 export const Route = createFileRoute("/onboarding")({
+  validateSearch: onboardingSearchSchema,
   head: () => ({ meta: [{ title: "Get started · CAREVIA" }] }),
   component: Onboarding,
 });
@@ -19,14 +25,33 @@ export const Route = createFileRoute("/onboarding")({
 function Onboarding() {
   const { user, roles, loading } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"role" | "ngo" | "recruiter" | "admin">("role");
-  const [chosen, setChosen] = useState<AppRole | null>(null);
+  const search = useSearch({ from: "/onboarding" });
+  const initialRole = search.role as AppRole | undefined;
+  const [step, setStep] = useState<"role" | "ngo" | "recruiter" | "admin">(() => {
+    if (initialRole === "ngo_partner") return "ngo";
+    if (initialRole === "recruiter") return "recruiter";
+    if (initialRole === "admin") return "admin";
+    return "role";
+  });
+  const [chosen, setChosen] = useState<AppRole | null>(initialRole ?? null);
+  const [autoAssigned, setAutoAssigned] = useState(false);
 
   useEffect(() => {
     if (loading) return;
-    if (!user) navigate({ to: "/auth" });
-    else if (roles.length > 0) navigate({ to: dashboardPathFor(roles) });
-  }, [loading, user, roles, navigate]);
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
+    if (roles.length > 0) {
+      navigate({ to: dashboardPathFor(roles) });
+      return;
+    }
+    if (initialRole === "survivor" && !autoAssigned) {
+      setAutoAssigned(true);
+      setChosen("survivor");
+      void grantRoleAndGo("survivor", navigate);
+    }
+  }, [loading, user, roles, navigate, initialRole, autoAssigned]);
 
   if (loading || !user) {
     return <CenteredMessage>Loading…</CenteredMessage>;

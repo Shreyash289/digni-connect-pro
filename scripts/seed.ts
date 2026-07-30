@@ -12,19 +12,81 @@ if (!url || !key) {
   process.exit(1);
 }
 
-const admin = createClient(url, key, { auth: { persistSession: false } });
+const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+
+const ADMIN_EMAIL = "shreym171@gmail.com";
+const ADMIN_NAME = "Shreyash";
+const ADMIN_PASSWORD = "Anshu06@";
 
 async function seed() {
   console.log("Seeding CAREVIA demo data…");
-  // Seed is idempotent-friendly: creates demo markers only when empty
-  const { count } = await admin.from("survivors").select("id", { count: "exact", head: true });
-  if ((count ?? 0) > 5) {
-    console.log("Database already has data, skipping seed.");
-    return;
+
+  const { data: existingAdminUser, error: userError } = await admin
+    .from("auth.users")
+    .select("id")
+    .eq("email", ADMIN_EMAIL)
+    .maybeSingle();
+
+  if (userError) {
+    console.error("Unable to query auth.users:", userError.message);
+    process.exit(1);
   }
-  console.log("Run migrations first, then create users via Supabase Auth dashboard.");
-  console.log("Target: 1 admin, 3 NGOs, 30 survivors, 5 recruiters, 10 jobs");
-  console.log("Assign roles via user_roles and approve NGOs/recruiters in admin UI.");
+
+  let adminUserId = existingAdminUser?.id;
+  if (!adminUserId) {
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+      email_confirm: true,
+      user_metadata: { full_name: ADMIN_NAME },
+    });
+
+    if (createError) {
+      console.error("Unable to create admin user:", createError.message);
+      process.exit(1);
+    }
+
+    adminUserId = created.user?.id;
+    if (!adminUserId) {
+      console.error("Admin user was created but no id was returned.");
+      process.exit(1);
+    }
+
+    console.log(`Created admin user: ${ADMIN_EMAIL}`);
+  } else {
+    console.log(`Found existing admin user: ${ADMIN_EMAIL}`);
+  }
+
+  const { data: existingRole, error: roleError } = await admin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", adminUserId)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (roleError) {
+    console.error("Unable to query user_roles:", roleError.message);
+    process.exit(1);
+  }
+
+  if (!existingRole) {
+    const { error: insertError } = await admin.from("user_roles").insert({
+      user_id: adminUserId,
+      role: "admin",
+    });
+    if (insertError) {
+      console.error("Unable to assign admin role:", insertError.message);
+      process.exit(1);
+    }
+    console.log(`Assigned admin role to ${ADMIN_EMAIL}`);
+  } else {
+    console.log(`Admin role already assigned to ${ADMIN_EMAIL}`);
+  }
+
+  console.log("Seed complete. You can now sign in with the seeded admin account.");
 }
 
-seed().catch(console.error);
+seed().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
