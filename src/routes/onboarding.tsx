@@ -27,10 +27,9 @@ function Onboarding() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/onboarding" });
   const initialRole = search.role as AppRole | undefined;
-  const [step, setStep] = useState<"role" | "ngo" | "recruiter" | "admin">(() => {
+  const [step, setStep] = useState<"role" | "ngo" | "recruiter">(() => {
     if (initialRole === "ngo_partner") return "ngo";
     if (initialRole === "recruiter") return "recruiter";
-    if (initialRole === "admin") return "admin";
     return "role";
   });
   const [chosen, setChosen] = useState<AppRole | null>(initialRole ?? null);
@@ -50,30 +49,29 @@ function Onboarding() {
       setAutoAssigned(true);
       setChosen("survivor");
       void grantRoleAndGo("survivor", navigate);
+      return;
     }
 
     if (initialRole === "admin" && !autoAssigned) {
       setAutoAssigned(true);
       setChosen("admin");
-      // auto-assign admin role via server function
-      (async () => {
-        const { data: userResp } = await supabase.auth.getUser();
-        const uid = userResp.user?.id;
-        if (!uid) {
-          toast.error("Session expired. Please sign in again.");
-          navigate({ to: "/auth" });
-          return;
-        }
-        const { error } = await requestAdminSignupRole({});
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-        await reload();
-        navigate({ to: dashboardPathFor(["admin"]) });
-      })();
+      const { data: userResp } = await supabase.auth.getUser();
+      if (!userResp.user?.id) {
+        toast.error("Session expired. Please sign in again.");
+        navigate({ to: "/auth" });
+        return;
+      }
+      const { error } = await requestAdminSignupRole({});
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      await reload();
+      navigate({ to: dashboardPathFor(["admin"]) });
+      return;
     }
-  }, [loading, user, roles, navigate, initialRole, autoAssigned]);
+
+  }, [loading, user, roles, navigate, initialRole, autoAssigned, reload]);
 
   if (loading || !user) {
     return <CenteredMessage>Loading…</CenteredMessage>;
@@ -106,11 +104,9 @@ function Onboarding() {
               if (r === "ngo_partner") setStep("ngo");
               else if (r === "recruiter") setStep("recruiter");
               else if (r === "admin") {
-                // immediately assign admin role and redirect
                 (async () => {
                   const { data: userResp } = await supabase.auth.getUser();
-                  const uid = userResp.user?.id;
-                  if (!uid) {
+                  if (!userResp.user?.id) {
                     toast.error("Session expired. Please sign in again.");
                     navigate({ to: "/auth" });
                     return;
@@ -131,14 +127,6 @@ function Onboarding() {
             onDone={async () => {
               if (!chosen) return;
               await grantRoleAndGo(chosen, navigate);
-            }}
-            onBack={() => setStep("role")}
-          />
-        ) : step === "admin" ? (
-          <AdminSignupForm
-            onDone={async () => {
-              toast.success("Admin access granted.");
-              navigate({ to: "/admin" });
             }}
             onBack={() => setStep("role")}
           />
@@ -179,53 +167,6 @@ async function grantRoleAndGo(
   navigate({ to: dashboardPathFor([role]) });
 }
 
-function AdminSignupForm({ onDone, onBack }: { onDone: () => void; onBack: () => void }) {
-  const { reload } = useAuth();
-  const [inviteCode, setInviteCode] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  async function save(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    // Call server function to assign admin role immediately (no invite code required)
-    const { error } = await requestAdminSignupRole({});
-    setSaving(false);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    // Reload auth state to pick up the new admin role
-    await reload();
-    onDone();
-  }
-
-  return (
-    <form onSubmit={save} className="space-y-5">
-      <div>
-        <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
-          ← Back
-        </button>
-        <h1 className="mt-2 font-display text-3xl font-bold text-primary">Request admin access</h1>
-        <p className="mt-2 text-muted-foreground">
-          Enter your invitation code to verify admin access and unlock the CAREVIA admin dashboard.
-        </p>
-      </div>
-      <div className="grid gap-4 rounded-2xl border border-border bg-card p-6">
-        <Field
-          label="Admin invite code *"
-          v={inviteCode}
-          on={setInviteCode}
-          required
-        />
-      </div>
-      <Button type="submit" disabled={saving}>
-        {saving ? "Verifying…" : "Verify code"}
-      </Button>
-    </form>
-  );
-}
 
 function RoleChooser({ onPick }: { onPick: (r: AppRole) => void }) {
   return (
@@ -246,7 +187,7 @@ function RoleChooser({ onPick }: { onPick: (r: AppRole) => void }) {
           icon={ShieldCheck}
           title="Admin"
           body="I manage approvals, review requests, and support the CAREVIA team with platform oversight."
-          cta="Request admin access"
+          cta="Continue as Admin"
           onClick={() => onPick("admin")}
         />
         <RoleCard

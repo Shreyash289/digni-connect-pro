@@ -119,7 +119,7 @@ function SignInForm() {
         <Input id="password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       <p className="text-sm text-muted-foreground">
-        If you have admin access, sign in with your admin credentials to manage approvals and review pending requests.
+        If you have admin access, sign in with your admin credentials to go straight to the admin dashboard.
       </p>
       <Button type="submit" disabled={loading} className="w-full">
         {loading ? "Signing in…" : "Sign in"}
@@ -149,7 +149,7 @@ function SignUpForm() {
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { full_name: fullName },
+        data: { full_name: fullName, role },
       },
     });
     setLoading(false);
