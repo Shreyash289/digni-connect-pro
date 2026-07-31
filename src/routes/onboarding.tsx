@@ -23,7 +23,7 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 function Onboarding() {
-  const { user, roles, loading } = useAuth();
+  const { user, roles, loading, reload } = useAuth();
   const navigate = useNavigate();
   const search = useSearch({ from: "/onboarding" });
   const initialRole = search.role as AppRole | undefined;
@@ -50,6 +50,28 @@ function Onboarding() {
       setAutoAssigned(true);
       setChosen("survivor");
       void grantRoleAndGo("survivor", navigate);
+    }
+
+    if (initialRole === "admin" && !autoAssigned) {
+      setAutoAssigned(true);
+      setChosen("admin");
+      // auto-assign admin role via server function
+      (async () => {
+        const { data: userResp } = await supabase.auth.getUser();
+        const uid = userResp.user?.id;
+        if (!uid) {
+          toast.error("Session expired. Please sign in again.");
+          navigate({ to: "/auth" });
+          return;
+        }
+        const { error } = await requestAdminSignupRole({});
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+        await reload();
+        navigate({ to: dashboardPathFor(["admin"]) });
+      })();
     }
   }, [loading, user, roles, navigate, initialRole, autoAssigned]);
 
@@ -83,8 +105,25 @@ function Onboarding() {
               setChosen(r);
               if (r === "ngo_partner") setStep("ngo");
               else if (r === "recruiter") setStep("recruiter");
-              else if (r === "admin") setStep("admin");
-              else void grantRoleAndGo(r, navigate);
+              else if (r === "admin") {
+                // immediately assign admin role and redirect
+                (async () => {
+                  const { data: userResp } = await supabase.auth.getUser();
+                  const uid = userResp.user?.id;
+                  if (!uid) {
+                    toast.error("Session expired. Please sign in again.");
+                    navigate({ to: "/auth" });
+                    return;
+                  }
+                  const { error } = await requestAdminSignupRole({});
+                  if (error) {
+                    toast.error(error.message);
+                    return;
+                  }
+                  await reload();
+                  navigate({ to: dashboardPathFor(["admin"]) });
+                })();
+              } else void grantRoleAndGo(r, navigate);
             }}
           />
         ) : step === "ngo" ? (
@@ -226,9 +265,7 @@ function RoleChooser({ onPick }: { onPick: (r: AppRole) => void }) {
           subtle
         />
       </div>
-      <p className="mt-6 text-xs text-muted-foreground">
-        Admin roles are granted by the CAREVIA team after verification.
-      </p>
+      
     </div>
   );
 }
