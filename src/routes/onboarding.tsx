@@ -147,12 +147,9 @@ function AdminSignupForm({ onDone, onBack }: { onDone: () => void; onBack: () =>
 
   async function save(e: FormEvent) {
     e.preventDefault();
-    if (!inviteCode.trim()) {
-      toast.error("Please enter your admin signup code.");
-      return;
-    }
     setSaving(true);
-    const { error } = await requestAdminSignupRole({ inviteCode: inviteCode.trim() });
+    // Call server function to assign admin role immediately (no invite code required)
+    const { error } = await requestAdminSignupRole({});
     setSaving(false);
 
     if (error) {

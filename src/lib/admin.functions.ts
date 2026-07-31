@@ -22,18 +22,10 @@ export const getAdminIntroRequests = createServerFn({ method: "POST" })
 export const requestAdminSignupRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }) => {
-    const inviteCode = String(data.inviteCode ?? "").trim();
-    const ADMIN_SIGNUP_CODE = process.env.ADMIN_SIGNUP_CODE;
-
-    if (!ADMIN_SIGNUP_CODE) {
-      throw new Error("Admin signup is not enabled.");
-    }
-    if (!inviteCode || inviteCode !== ADMIN_SIGNUP_CODE) {
-      throw new Error("Invalid admin signup code.");
-    }
-
+    // Auto-grant admin role to the authenticated account (no invite code required)
     const { supabaseAdmin, supabase } = await import("@/integrations/supabase/client.server");
     const { userId } = context;
+
     const { data: existingRole, error: existingError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
