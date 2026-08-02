@@ -259,3 +259,88 @@ export const searchSkillsTaxonomy = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return skills ?? [];
   });
+
+export const getOrCreateSurvivorProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+
+    // Check if profile exists
+    const { data: survivor, error } = await supabase
+      .from("survivors")
+      .select("*, survivor_documents(*)")
+      .eq("linked_user_id", userId)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (survivor) return survivor;
+
+    // If profile does not exist, fetch user profile for fallback name, and create a new survivor row
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const { data: newSurvivor, error: createError } = await supabase
+      .from("survivors")
+      .insert({
+        linked_user_id: userId,
+        created_by: userId,
+        full_name: profile?.full_name || "Survivor",
+        status: "approved"
+      })
+      .select("*, survivor_documents(*)")
+      .single();
+
+    if (createError) throw new Error(createError.message);
+    return newSurvivor;
+  });
+
+export const getSignedResumeUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+
+    const { data: survivor, error } = await supabase
+      .from("survivors")
+      .select("resume_url")
+      .eq("linked_user_id", userId)
+      .single();
+
+    if (error || !survivor || !survivor.resume_url) {
+      throw new Error("Resume not found");
+    }
+
+    const storagePath = `${userId}/resume.pdf`;
+    const { data, error: signedError } = await supabase.storage
+      .from("resumes")
+      .createSignedUrl(storagePath, 300);
+
+    if (signedError) throw new Error(signedError.message);
+    return { url: data.signedUrl };
+  });
+
+export const updateResumeMetadata = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      resumeUrl: z.string().nullable(),
+      resumeName: z.string().nullable(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("survivors")
+      .update({
+        resume_url: data.resumeUrl,
+        resume_name: data.resumeName,
+        resume_uploaded_at: data.resumeUrl ? new Date().toISOString() : null,
+        uploaded_at: data.resumeUrl ? new Date().toISOString() : null,
+      })
+      .eq("linked_user_id", userId);
+
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

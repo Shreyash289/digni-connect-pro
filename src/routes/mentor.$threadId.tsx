@@ -17,7 +17,11 @@ export const Route = createFileRoute("/mentor/$threadId")({
   component: MentorChat,
 });
 
-const MENTOR_NAV = [{ to: "/mentor", label: "Conversations" }];
+const MENTOR_NAV = [
+  { to: "/mentor", label: "Conversations" },
+  { to: "/mentor/resume", label: "Resume" },
+  { to: "/mentor/builder", label: "Resume Builder" },
+];
 
 function MentorChat() {
   const { threadId } = Route.useParams();
@@ -53,7 +57,7 @@ function ChatInner({ threadId }: { threadId: string }) {
     parts: m.parts as { type: string; text?: string }[],
   }));
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, error } = useChat({
     id: threadId,
     messages: initialMessages,
     transport: new DefaultChatTransport({
@@ -125,9 +129,14 @@ function ChatInner({ threadId }: { threadId: string }) {
                 )}
               </div>
             ))}
-            {status === "submitted" && (
+            {(status === "submitted" || status === "streaming") && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" /> Thinking…
+                <Loader2 className="size-4 animate-spin text-accent" /> CAREVIA AI is typing...
+              </div>
+            )}
+            {error && (
+              <div className="flex items-center gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive-foreground">
+                Unable to reach AI. Please try again.
               </div>
             )}
           </div>

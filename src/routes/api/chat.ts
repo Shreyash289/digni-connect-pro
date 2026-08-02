@@ -7,8 +7,24 @@ const CRISIS_KEYWORDS = [
   "want to die", "no reason to live",
 ];
 
-const SYSTEM_PROMPT = `You are a warm, trauma-informed career mentor for CAREVIA's Digital Survivor Repository.
-You help survivors and NGO partners with career guidance, skill suggestions, interview preparation, and strengths-based coaching.
+const SYSTEM_PROMPT = `You are CAREVIA AI Mentor.
+Your role is to guide cancer survivors and caregivers with career-related support.
+You help users with:
+• Resume review
+• Resume building
+• Interview preparation
+• Career guidance
+• Job searching
+• Skill recommendations
+• LinkedIn optimization
+• Cover letters
+• Professional communication
+• Career transitions
+• Confidence building
+
+You MUST NOT provide medical diagnosis or treatment advice.
+If users ask medical questions, politely recommend consulting healthcare professionals while offering career or workplace guidance if relevant.
+Maintain an empathetic, supportive and encouraging tone.
 
 IMPORTANT RULES:
 - You are NOT a therapist or clinician. Never provide clinical mental health advice.
@@ -105,25 +121,30 @@ export const Route = createFileRoute("/api/chat")({
           }
         }
 
-        const google = getGoogleAi();
-        const result = streamText({
-          model: google(DEFAULT_CHAT_MODEL),
-          system: SYSTEM_PROMPT + contextBlock,
-          messages: await convertToModelMessages(messages),
-          onFinish: async ({ text }) => {
-            await supabase.from("mentor_messages").insert({
-              thread_id: threadId,
-              role: "assistant",
-              parts: [{ type: "text", text }],
-            });
-            await supabase
-              .from("mentor_threads")
-              .update({ updated_at: new Date().toISOString() })
-              .eq("id", threadId);
-          },
-        });
+        try {
+          const google = getGoogleAi();
+          const result = streamText({
+            model: google(DEFAULT_CHAT_MODEL),
+            system: SYSTEM_PROMPT + contextBlock,
+            messages: await convertToModelMessages(messages),
+            onFinish: async ({ text }) => {
+              await supabase.from("mentor_messages").insert({
+                thread_id: threadId,
+                role: "assistant",
+                parts: [{ type: "text", text }],
+              });
+              await supabase
+                .from("mentor_threads")
+                .update({ updated_at: new Date().toISOString() })
+                .eq("id", threadId);
+            },
+          });
 
-        return result.toUIMessageStreamResponse({ originalMessages: messages });
+          return result.toUIMessageStreamResponse({ originalMessages: messages });
+        } catch (err: any) {
+          console.error("Gemini stream error:", err);
+          return new Response(err.message || "Unable to reach AI. Please try again.", { status: 500 });
+        }
       },
     },
   },

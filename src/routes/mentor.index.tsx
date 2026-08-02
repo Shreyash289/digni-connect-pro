@@ -13,6 +13,8 @@ export const Route = createFileRoute("/mentor/")({
 
 const MENTOR_NAV = [
   { to: "/mentor", label: "Conversations" },
+  { to: "/mentor/resume", label: "Resume" },
+  { to: "/mentor/builder", label: "Resume Builder" },
 ];
 
 function MentorIndex() {

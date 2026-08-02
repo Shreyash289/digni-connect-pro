@@ -1,7 +1,7 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { embed } from "ai";
 
-export const DEFAULT_CHAT_MODEL = "gemini-2.0-flash";
+export const DEFAULT_CHAT_MODEL = "gemini-2.5-flash";
 export const DEFAULT_EMBED_MODEL = "text-embedding-004";
 
 function getApiKey(): string {

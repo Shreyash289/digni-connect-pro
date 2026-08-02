@@ -27,6 +27,8 @@ import { Route as NgoRequestsRouteImport } from './routes/ngo.requests'
 import { Route as NgoOrganizationRouteImport } from './routes/ngo.organization'
 import { Route as NgoDashboardRouteImport } from './routes/ngo.dashboard'
 import { Route as NgoAnalyticsRouteImport } from './routes/ngo.analytics'
+import { Route as MentorResumeRouteImport } from './routes/mentor.resume'
+import { Route as MentorBuilderRouteImport } from './routes/mentor.builder'
 import { Route as MentorThreadIdRouteImport } from './routes/mentor.$threadId'
 import { Route as JobsIdRouteImport } from './routes/jobs.$id'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
@@ -128,6 +130,16 @@ const NgoAnalyticsRoute = NgoAnalyticsRouteImport.update({
   path: '/ngo/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MentorResumeRoute = MentorResumeRouteImport.update({
+  id: '/mentor/resume',
+  path: '/mentor/resume',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentorBuilderRoute = MentorBuilderRouteImport.update({
+  id: '/mentor/builder',
+  path: '/mentor/builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MentorThreadIdRoute = MentorThreadIdRouteImport.update({
   id: '/mentor/$threadId',
   path: '/mentor/$threadId',
@@ -192,6 +204,8 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/jobs/$id': typeof JobsIdRoute
   '/mentor/$threadId': typeof MentorThreadIdRoute
+  '/mentor/builder': typeof MentorBuilderRoute
+  '/mentor/resume': typeof MentorResumeRoute
   '/ngo/analytics': typeof NgoAnalyticsRoute
   '/ngo/dashboard': typeof NgoDashboardRoute
   '/ngo/organization': typeof NgoOrganizationRoute
@@ -222,6 +236,8 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/jobs/$id': typeof JobsIdRoute
   '/mentor/$threadId': typeof MentorThreadIdRoute
+  '/mentor/builder': typeof MentorBuilderRoute
+  '/mentor/resume': typeof MentorResumeRoute
   '/ngo/analytics': typeof NgoAnalyticsRoute
   '/ngo/dashboard': typeof NgoDashboardRoute
   '/ngo/organization': typeof NgoOrganizationRoute
@@ -253,6 +269,8 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/jobs/$id': typeof JobsIdRoute
   '/mentor/$threadId': typeof MentorThreadIdRoute
+  '/mentor/builder': typeof MentorBuilderRoute
+  '/mentor/resume': typeof MentorResumeRoute
   '/ngo/analytics': typeof NgoAnalyticsRoute
   '/ngo/dashboard': typeof NgoDashboardRoute
   '/ngo/organization': typeof NgoOrganizationRoute
@@ -285,6 +303,8 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/jobs/$id'
     | '/mentor/$threadId'
+    | '/mentor/builder'
+    | '/mentor/resume'
     | '/ngo/analytics'
     | '/ngo/dashboard'
     | '/ngo/organization'
@@ -315,6 +335,8 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/jobs/$id'
     | '/mentor/$threadId'
+    | '/mentor/builder'
+    | '/mentor/resume'
     | '/ngo/analytics'
     | '/ngo/dashboard'
     | '/ngo/organization'
@@ -345,6 +367,8 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/jobs/$id'
     | '/mentor/$threadId'
+    | '/mentor/builder'
+    | '/mentor/resume'
     | '/ngo/analytics'
     | '/ngo/dashboard'
     | '/ngo/organization'
@@ -376,6 +400,8 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   JobsIdRoute: typeof JobsIdRoute
   MentorThreadIdRoute: typeof MentorThreadIdRoute
+  MentorBuilderRoute: typeof MentorBuilderRoute
+  MentorResumeRoute: typeof MentorResumeRoute
   NgoAnalyticsRoute: typeof NgoAnalyticsRoute
   NgoDashboardRoute: typeof NgoDashboardRoute
   NgoOrganizationRoute: typeof NgoOrganizationRoute
@@ -521,6 +547,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NgoAnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mentor/resume': {
+      id: '/mentor/resume'
+      path: '/mentor/resume'
+      fullPath: '/mentor/resume'
+      preLoaderRoute: typeof MentorResumeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentor/builder': {
+      id: '/mentor/builder'
+      path: '/mentor/builder'
+      fullPath: '/mentor/builder'
+      preLoaderRoute: typeof MentorBuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mentor/$threadId': {
       id: '/mentor/$threadId'
       path: '/mentor/$threadId'
@@ -619,6 +659,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   JobsIdRoute: JobsIdRoute,
   MentorThreadIdRoute: MentorThreadIdRoute,
+  MentorBuilderRoute: MentorBuilderRoute,
+  MentorResumeRoute: MentorResumeRoute,
   NgoAnalyticsRoute: NgoAnalyticsRoute,
   NgoDashboardRoute: NgoDashboardRoute,
   NgoOrganizationRoute: NgoOrganizationRoute,

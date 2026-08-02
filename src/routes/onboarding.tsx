@@ -55,19 +55,21 @@ function Onboarding() {
     if (initialRole === "admin" && !autoAssigned) {
       setAutoAssigned(true);
       setChosen("admin");
-      const { data: userResp } = await supabase.auth.getUser();
-      if (!userResp.user?.id) {
-        toast.error("Session expired. Please sign in again.");
-        navigate({ to: "/auth" });
-        return;
-      }
-      const { error } = await requestAdminSignupRole({});
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      await reload();
-      navigate({ to: dashboardPathFor(["admin"]) });
+      void (async () => {
+        const { data: userResp } = await supabase.auth.getUser();
+        if (!userResp.user?.id) {
+          toast.error("Session expired. Please sign in again.");
+          navigate({ to: "/auth" });
+          return;
+        }
+        const { error } = await requestAdminSignupRole({});
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+        await reload();
+        navigate({ to: dashboardPathFor(["admin"]) });
+      })();
       return;
     }
 
