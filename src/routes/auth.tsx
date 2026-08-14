@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { dashboardPathFor, type AppRole } from "@/hooks/useAuth";
 
 const searchSchema = z.object({
@@ -83,6 +84,7 @@ function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,6 +92,11 @@ function SignInForm() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
+      if (error.code === "email_not_confirmed" || /confirm/i.test(error.message)) {
+        setNeedsVerification(true);
+        toast.error("Please verify your email to continue.");
+        return;
+      }
       toast.error(error.message);
       return;
     }
@@ -106,6 +113,10 @@ function SignInForm() {
     setLoading(false);
     toast.success("Welcome back!");
     navigate({ to: dashboardPathFor(roles) });
+  }
+
+  if (needsVerification) {
+    return <VerifyEmailForm email={email} onBack={() => setNeedsVerification(false)} />;
   }
 
   return (
@@ -135,6 +146,7 @@ function SignUpForm() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<AppRole>("survivor");
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -164,9 +176,12 @@ function SignUpForm() {
       return;
     }
 
-    toast.success(
-      "Account created. Check your email to confirm your account, then sign in to continue onboarding.",
-    );
+    toast.success("Account created. Enter the code we emailed you to verify your address.");
+    setVerifying(true);
+  }
+
+  if (verifying) {
+    return <VerifyEmailForm email={email} role={role} onBack={() => setVerifying(false)} />;
   }
 
   return (
@@ -202,5 +217,83 @@ function SignUpForm() {
         {loading ? "Creating…" : "Create account"}
       </Button>
     </form>
+  );
+}
+
+function VerifyEmailForm({
+  email,
+  role,
+  onBack,
+}: {
+  email: string;
+  role?: AppRole;
+  onBack: () => void;
+}) {
+  const navigate = useNavigate();
+  const [code, setCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  async function verify() {
+    if (code.length !== 6) return;
+    setVerifying(true);
+    const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: "signup" });
+    setVerifying(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    const userId = data.session?.user.id ?? data.user?.id;
+    if (!userId) {
+      toast.error("Verification succeeded, but no session was returned. Please sign in.");
+      onBack();
+      return;
+    }
+
+    toast.success("Email verified.");
+    const roles = await loadRoles(userId);
+    navigate({ to: roles.length > 0 ? dashboardPathFor(roles) : role ? `/onboarding?role=${role}` : "/onboarding" });
+  }
+
+  async function resend() {
+    setResending(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setResending(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Verification code resent.");
+  }
+
+  return (
+    <div className="mt-6 space-y-5">
+      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
+        ← Back
+      </button>
+      <div>
+        <p className="text-sm text-foreground">
+          Enter the 6-digit code we emailed to <span className="font-medium">{email}</span>.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">Didn't get it? Check spam, or resend below.</p>
+      </div>
+      <InputOTP maxLength={6} value={code} onChange={setCode}>
+        <InputOTPGroup>
+          <InputOTPSlot index={0} />
+          <InputOTPSlot index={1} />
+          <InputOTPSlot index={2} />
+          <InputOTPSlot index={3} />
+          <InputOTPSlot index={4} />
+          <InputOTPSlot index={5} />
+        </InputOTPGroup>
+      </InputOTP>
+      <Button onClick={verify} disabled={verifying || code.length !== 6} className="w-full">
+        {verifying ? "Verifying…" : "Verify"}
+      </Button>
+      <Button type="button" variant="ghost" onClick={resend} disabled={resending} className="w-full">
+        {resending ? "Resending…" : "Resend code"}
+      </Button>
+    </div>
   );
 }
