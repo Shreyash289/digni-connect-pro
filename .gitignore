@@ -1,29 +1,3 @@
-<<<<<<< HEAD
-# Dependencies
-node_modules
-.pnp
-.pnp.js
-
-# Build
-dist
-dist-ssr
-*.local
-
-# Editor
-.vscode
-.idea
-*.suo
-*.swp
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# OS
-.DS_Store
-Thumbs.db
-=======
 # Dependencies
 node_modules
 .pnp
@@ -49,4 +23,3 @@ dist-ssr
 # OS
 .DS_Store
 Thumbs.db
->>>>>>> ddf4c5eddc87b98305abf3bf40eac5ef5b9eab5f

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { HeartHandshake, Building2, Briefcase, ShieldCheck, LogOut } from "lucide-react";
+import { HeartHandshake, Building2, Briefcase, ShieldCheck, LogOut, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, dashboardPathFor, type AppRole } from "@/hooks/useAuth";
 import { requestAdminSignupRole } from "@/lib/admin.functions";
@@ -27,9 +27,10 @@ function Onboarding() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/onboarding" });
   const initialRole = search.role as AppRole | undefined;
-  const [step, setStep] = useState<"role" | "ngo" | "recruiter">(() => {
+  const [step, setStep] = useState<"role" | "ngo" | "recruiter" | "admin">(() => {
     if (initialRole === "ngo_partner") return "ngo";
     if (initialRole === "recruiter") return "recruiter";
+    if (initialRole === "admin") return "admin";
     return "role";
   });
   const [chosen, setChosen] = useState<AppRole | null>(initialRole ?? null);
@@ -51,29 +52,7 @@ function Onboarding() {
       void grantRoleAndGo("survivor", navigate);
       return;
     }
-
-    if (initialRole === "admin" && !autoAssigned) {
-      setAutoAssigned(true);
-      setChosen("admin");
-      void (async () => {
-        const { data: userResp } = await supabase.auth.getUser();
-        if (!userResp.user?.id) {
-          toast.error("Session expired. Please sign in again.");
-          navigate({ to: "/auth" });
-          return;
-        }
-        const { error } = await requestAdminSignupRole({});
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-        await reload();
-        navigate({ to: dashboardPathFor(["admin"]) });
-      })();
-      return;
-    }
-
-  }, [loading, user, roles, navigate, initialRole, autoAssigned, reload]);
+  }, [loading, user, roles, navigate, initialRole, autoAssigned]);
 
   if (loading || !user) {
     return <CenteredMessage>Loading…</CenteredMessage>;
@@ -105,23 +84,8 @@ function Onboarding() {
               setChosen(r);
               if (r === "ngo_partner") setStep("ngo");
               else if (r === "recruiter") setStep("recruiter");
-              else if (r === "admin") {
-                (async () => {
-                  const { data: userResp } = await supabase.auth.getUser();
-                  if (!userResp.user?.id) {
-                    toast.error("Session expired. Please sign in again.");
-                    navigate({ to: "/auth" });
-                    return;
-                  }
-                  const { error } = await requestAdminSignupRole({});
-                  if (error) {
-                    toast.error(error.message);
-                    return;
-                  }
-                  await reload();
-                  navigate({ to: dashboardPathFor(["admin"]) });
-                })();
-              } else void grantRoleAndGo(r, navigate);
+              else if (r === "admin") setStep("admin");
+              else void grantRoleAndGo(r, navigate);
             }}
           />
         ) : step === "ngo" ? (
@@ -132,11 +96,19 @@ function Onboarding() {
             }}
             onBack={() => setStep("role")}
           />
-        ) : (
+        ) : step === "recruiter" ? (
           <RecruiterForm
             onDone={async () => {
               toast.success("Recruiter application submitted for review.");
               navigate({ to: "/recruiter" });
+            }}
+            onBack={() => setStep("role")}
+          />
+        ) : (
+          <AdminInviteForm
+            onDone={async () => {
+              await reload();
+              navigate({ to: dashboardPathFor(["admin"]) });
             }}
             onBack={() => setStep("role")}
           />
@@ -380,3 +352,84 @@ function RecruiterForm({ onDone, onBack }: { onDone: () => void; onBack: () => v
     </form>
   );
 }
+
+function AdminInviteForm({
+  onDone,
+  onBack,
+}: {
+  onDone: () => void;
+  onBack: () => void;
+}) {
+  const [inviteCode, setInviteCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inviteCode.trim()) {
+      toast.error("Please enter the admin invitation code.");
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const resp = await requestAdminSignupRole({
+        data: { inviteCode: inviteCode.trim() },
+      });
+      setVerifying(false);
+      if (resp?.success) {
+        toast.success("Admin invitation verified successfully.");
+        onDone();
+      }
+    } catch (err: any) {
+      setVerifying(false);
+      toast.error(
+        err.message ||
+          "Invalid admin invitation code. Admin access requires an authorized invitation.",
+      );
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
+          ← Back
+        </button>
+        <h1 className="mt-2 font-display text-3xl font-bold text-primary">
+          Admin Verification
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          Platform administration requires an authorized invitation code. This
+          action is logged and audited.
+        </p>
+      </div>
+      <div className="grid gap-4 rounded-2xl border border-border bg-card p-6">
+        <div>
+          <Label htmlFor="admin_invite_code">Admin Invitation Code *</Label>
+          <Input
+            id="admin_invite_code"
+            type="password"
+            required
+            autoComplete="off"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value)}
+            placeholder="Enter authorized admin code"
+            className="mt-2"
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Contact your CAREVIA systems administrator if you do not have an invite code.
+          </p>
+        </div>
+      </div>
+      <Button type="submit" disabled={verifying} className="gap-2">
+        {verifying ? <Loader2 className="size-4 animate-spin" /> : null}
+        {verifying ? "Verifying Code…" : "Verify & Continue"}
+      </Button>
+    </form>
+  );
+}
+

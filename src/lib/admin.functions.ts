@@ -19,13 +19,39 @@ export const getAdminIntroRequests = createServerFn({ method: "POST" })
     return data ?? [];
   });
 
+import { z } from "zod";
+import crypto from "node:crypto";
+
 export const requestAdminSignupRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      inviteCode: z.string().min(1, "Admin invite code is required"),
+    }),
+  )
   .handler(async ({ data, context }) => {
-    // Auto-grant admin role to the authenticated account (no invite code required)
-    const { supabaseAdmin, supabase } = await import("@/integrations/supabase/client.server");
     const { userId } = context;
+    const expectedCode = process.env.ADMIN_SIGNUP_CODE;
 
+    // Fail closed if server secret is not configured
+    if (!expectedCode || expectedCode.trim() === "") {
+      throw new Error("Admin registration is not configured or currently disabled.");
+    }
+
+    // Timing-safe comparison to prevent timing attacks
+    const providedBuffer = Buffer.from(data.inviteCode.trim());
+    const expectedBuffer = Buffer.from(expectedCode.trim());
+
+    if (
+      providedBuffer.length !== expectedBuffer.length ||
+      !crypto.timingSafeEqual(providedBuffer, expectedBuffer)
+    ) {
+      throw new Error("Invalid admin invitation code. Admin access requires an authorized invitation.");
+    }
+
+    const { supabaseAdmin, supabase } = await import("@/integrations/supabase/client.server");
+
+    // Check if user already has any role assigned
     const { data: existingRole, error: existingError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -40,14 +66,22 @@ export const requestAdminSignupRole = createServerFn({ method: "POST" })
       throw new Error("A role is already assigned to this account.");
     }
 
-    const { error } = await supabaseAdmin.from("user_roles").insert({
+    const { error: insertError } = await supabaseAdmin.from("user_roles").insert({
       user_id: userId,
       role: "admin",
     });
 
-    if (error) {
-      throw new Error(error.message);
+    if (insertError) {
+      throw new Error(insertError.message);
     }
+
+    const { writeAudit } = await import("@/lib/audit.server");
+    await writeAudit(supabase, {
+      actorId: userId,
+      action: "admin.signup_verified",
+      entityType: "user_roles",
+      metadata: { role: "admin" },
+    });
 
     return { success: true };
   });

@@ -80,19 +80,12 @@ function DashboardInner() {
 
   if (ngo.status === "pending") {
     return (
-      <>
-        <StatusBanner
-          icon={Clock}
-          tone="warning"
-          title="Your NGO is under review"
-          body="A CAREVIA admin will verify your organization shortly. You'll be able to onboard survivors once approved."
-        />
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Link to="/auth" className="inline-flex">
-            <Button variant="outline" size="sm">Admin sign in</Button>
-          </Link>
-        </div>
-      </>
+      <StatusBanner
+        icon={Clock}
+        tone="warning"
+        title="Your NGO is under review"
+        body="A CAREVIA admin will verify your organization shortly. You'll be able to onboard survivors once approved."
+      />
     );
   }
 

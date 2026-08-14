@@ -102,6 +102,6 @@ export function dashboardPathFor(roles: AppRole[]): string {
   if (p === "super_admin" || p === "admin") return "/admin";
   if (p === "ngo_partner") return "/ngo";
   if (p === "recruiter") return "/recruiter";
-  if (p === "survivor") return "/mentor";
+  if (p === "survivor") return "/survivor/dashboard";
   return "/onboarding";
 }
