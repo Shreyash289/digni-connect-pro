@@ -25,7 +25,7 @@ export const requestAdminSignupRole = createServerFn({ method: "POST" })
     // Bootstrap rule: self-service admin signup only works while the
     // platform has zero admins. Once one exists, further admins must be
     // granted the role by an existing admin — no invite code to manage.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin, supabase } = await import("@/integrations/supabase/client.server");
     const { userId } = context;
 
     const { data: existingRole, error: existingError } = await supabaseAdmin
@@ -55,14 +55,22 @@ export const requestAdminSignupRole = createServerFn({ method: "POST" })
       );
     }
 
-    const { error } = await supabaseAdmin.from("user_roles").insert({
+    const { error: insertError } = await supabaseAdmin.from("user_roles").insert({
       user_id: userId,
       role: "admin",
     });
 
-    if (error) {
-      throw new Error(error.message);
+    if (insertError) {
+      throw new Error(insertError.message);
     }
+
+    const { writeAudit } = await import("@/lib/audit.server");
+    await writeAudit(supabase, {
+      actorId: userId,
+      action: "admin.signup_verified",
+      entityType: "user_roles",
+      metadata: { role: "admin" },
+    });
 
     return { success: true };
   });

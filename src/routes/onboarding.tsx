@@ -192,7 +192,7 @@ function RoleChooser({ onPick }: { onPick: (r: AppRole) => void }) {
           subtle
         />
       </div>
-      
+
     </div>
   );
 }

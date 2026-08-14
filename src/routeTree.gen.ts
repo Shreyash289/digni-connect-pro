@@ -38,6 +38,10 @@ import { Route as RecruiterJobsRouteImport } from './routes/recruiter.jobs'
 import { Route as RecruiterRequestsRouteImport } from './routes/recruiter.requests'
 import { Route as RecruiterSearchRouteImport } from './routes/recruiter.search'
 import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
+import { Route as SurvivorIndexRouteImport } from './routes/survivor.index'
+import { Route as SurvivorApplicationsRouteImport } from './routes/survivor.applications'
+import { Route as SurvivorDashboardRouteImport } from './routes/survivor.dashboard'
+import { Route as SurvivorProfileRouteImport } from './routes/survivor.profile'
 import { Route as NgoSurvivorsIdRouteImport } from './routes/ngo.survivors.$id'
 import { Route as RecruiterJobsIdEditRouteImport } from './routes/recruiter.jobs.$id.edit'
 
@@ -186,6 +190,26 @@ const SettingsNotificationsRoute = SettingsNotificationsRouteImport.update({
   path: '/settings/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SurvivorIndexRoute = SurvivorIndexRouteImport.update({
+  id: '/survivor/',
+  path: '/survivor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SurvivorApplicationsRoute = SurvivorApplicationsRouteImport.update({
+  id: '/survivor/applications',
+  path: '/survivor/applications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SurvivorDashboardRoute = SurvivorDashboardRouteImport.update({
+  id: '/survivor/dashboard',
+  path: '/survivor/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SurvivorProfileRoute = SurvivorProfileRouteImport.update({
+  id: '/survivor/profile',
+  path: '/survivor/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NgoSurvivorsIdRoute = NgoSurvivorsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -222,11 +246,15 @@ export interface FileRoutesByFullPath {
   '/recruiter/requests': typeof RecruiterRequestsRoute
   '/recruiter/search': typeof RecruiterSearchRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
+  '/survivor/applications': typeof SurvivorApplicationsRoute
+  '/survivor/dashboard': typeof SurvivorDashboardRoute
+  '/survivor/profile': typeof SurvivorProfileRoute
   '/admin/': typeof AdminIndexRoute
   '/jobs/': typeof JobsIndexRoute
   '/mentor/': typeof MentorIndexRoute
   '/ngo/': typeof NgoIndexRoute
   '/recruiter/': typeof RecruiterIndexRoute
+  '/survivor/': typeof SurvivorIndexRoute
   '/ngo/survivors/$id': typeof NgoSurvivorsIdRoute
   '/recruiter/jobs/$id/edit': typeof RecruiterJobsIdEditRoute
 }
@@ -255,11 +283,15 @@ export interface FileRoutesByTo {
   '/recruiter/requests': typeof RecruiterRequestsRoute
   '/recruiter/search': typeof RecruiterSearchRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
+  '/survivor/applications': typeof SurvivorApplicationsRoute
+  '/survivor/dashboard': typeof SurvivorDashboardRoute
+  '/survivor/profile': typeof SurvivorProfileRoute
   '/admin': typeof AdminIndexRoute
   '/jobs': typeof JobsIndexRoute
   '/mentor': typeof MentorIndexRoute
   '/ngo': typeof NgoIndexRoute
   '/recruiter': typeof RecruiterIndexRoute
+  '/survivor': typeof SurvivorIndexRoute
   '/ngo/survivors/$id': typeof NgoSurvivorsIdRoute
   '/recruiter/jobs/$id/edit': typeof RecruiterJobsIdEditRoute
 }
@@ -289,11 +321,15 @@ export interface FileRoutesById {
   '/recruiter/requests': typeof RecruiterRequestsRoute
   '/recruiter/search': typeof RecruiterSearchRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
+  '/survivor/applications': typeof SurvivorApplicationsRoute
+  '/survivor/dashboard': typeof SurvivorDashboardRoute
+  '/survivor/profile': typeof SurvivorProfileRoute
   '/admin/': typeof AdminIndexRoute
   '/jobs/': typeof JobsIndexRoute
   '/mentor/': typeof MentorIndexRoute
   '/ngo/': typeof NgoIndexRoute
   '/recruiter/': typeof RecruiterIndexRoute
+  '/survivor/': typeof SurvivorIndexRoute
   '/ngo/survivors/$id': typeof NgoSurvivorsIdRoute
   '/recruiter/jobs/$id/edit': typeof RecruiterJobsIdEditRoute
 }
@@ -324,11 +360,15 @@ export interface FileRouteTypes {
     | '/recruiter/requests'
     | '/recruiter/search'
     | '/settings/notifications'
+    | '/survivor/applications'
+    | '/survivor/dashboard'
+    | '/survivor/profile'
     | '/admin/'
     | '/jobs/'
     | '/mentor/'
     | '/ngo/'
     | '/recruiter/'
+    | '/survivor/'
     | '/ngo/survivors/$id'
     | '/recruiter/jobs/$id/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -357,11 +397,15 @@ export interface FileRouteTypes {
     | '/recruiter/requests'
     | '/recruiter/search'
     | '/settings/notifications'
+    | '/survivor/applications'
+    | '/survivor/dashboard'
+    | '/survivor/profile'
     | '/admin'
     | '/jobs'
     | '/mentor'
     | '/ngo'
     | '/recruiter'
+    | '/survivor'
     | '/ngo/survivors/$id'
     | '/recruiter/jobs/$id/edit'
   id:
@@ -390,11 +434,15 @@ export interface FileRouteTypes {
     | '/recruiter/requests'
     | '/recruiter/search'
     | '/settings/notifications'
+    | '/survivor/applications'
+    | '/survivor/dashboard'
+    | '/survivor/profile'
     | '/admin/'
     | '/jobs/'
     | '/mentor/'
     | '/ngo/'
     | '/recruiter/'
+    | '/survivor/'
     | '/ngo/survivors/$id'
     | '/recruiter/jobs/$id/edit'
   fileRoutesById: FileRoutesById
@@ -424,11 +472,15 @@ export interface RootRouteChildren {
   RecruiterRequestsRoute: typeof RecruiterRequestsRoute
   RecruiterSearchRoute: typeof RecruiterSearchRoute
   SettingsNotificationsRoute: typeof SettingsNotificationsRoute
+  SurvivorApplicationsRoute: typeof SurvivorApplicationsRoute
+  SurvivorDashboardRoute: typeof SurvivorDashboardRoute
+  SurvivorProfileRoute: typeof SurvivorProfileRoute
   AdminIndexRoute: typeof AdminIndexRoute
   JobsIndexRoute: typeof JobsIndexRoute
   MentorIndexRoute: typeof MentorIndexRoute
   NgoIndexRoute: typeof NgoIndexRoute
   RecruiterIndexRoute: typeof RecruiterIndexRoute
+  SurvivorIndexRoute: typeof SurvivorIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -636,6 +688,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsNotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/survivor/': {
+      id: '/survivor/'
+      path: '/survivor'
+      fullPath: '/survivor/'
+      preLoaderRoute: typeof SurvivorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/survivor/applications': {
+      id: '/survivor/applications'
+      path: '/survivor/applications'
+      fullPath: '/survivor/applications'
+      preLoaderRoute: typeof SurvivorApplicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/survivor/dashboard': {
+      id: '/survivor/dashboard'
+      path: '/survivor/dashboard'
+      fullPath: '/survivor/dashboard'
+      preLoaderRoute: typeof SurvivorDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/survivor/profile': {
+      id: '/survivor/profile'
+      path: '/survivor/profile'
+      fullPath: '/survivor/profile'
+      preLoaderRoute: typeof SurvivorProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ngo/survivors/$id': {
       id: '/ngo/survivors/$id'
       path: '/$id'
@@ -702,11 +782,15 @@ const rootRouteChildren: RootRouteChildren = {
   RecruiterRequestsRoute: RecruiterRequestsRoute,
   RecruiterSearchRoute: RecruiterSearchRoute,
   SettingsNotificationsRoute: SettingsNotificationsRoute,
+  SurvivorApplicationsRoute: SurvivorApplicationsRoute,
+  SurvivorDashboardRoute: SurvivorDashboardRoute,
+  SurvivorProfileRoute: SurvivorProfileRoute,
   AdminIndexRoute: AdminIndexRoute,
   JobsIndexRoute: JobsIndexRoute,
   MentorIndexRoute: MentorIndexRoute,
   NgoIndexRoute: NgoIndexRoute,
   RecruiterIndexRoute: RecruiterIndexRoute,
+  SurvivorIndexRoute: SurvivorIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

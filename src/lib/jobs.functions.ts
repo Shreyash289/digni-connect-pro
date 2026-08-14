@@ -153,36 +153,116 @@ export const getPublishedJob = createServerFn({ method: "POST" })
     return job;
   });
 
+export const checkMyJobApplication = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ jobId: z.string().uuid() }))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Resolve survivor
+    const { data: survivor } = await supabase
+      .from("survivors")
+      .select("id")
+      .eq("linked_user_id", userId)
+      .maybeSingle();
+
+    if (!survivor) return { hasApplied: false, application: null };
+
+    const { data: app, error } = await supabase
+      .from("job_applications")
+      .select("id, status, created_at, cover_note")
+      .eq("job_id", data.jobId)
+      .eq("survivor_id", survivor.id)
+      .maybeSingle();
+
+    if (error) return { hasApplied: false, application: null };
+    return { hasApplied: !!app, application: app ?? null };
+  });
+
 export const applyToJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
     z.object({
       jobId: z.string().uuid(),
-      survivorId: z.string().uuid(),
+      survivorId: z.string().uuid().optional(),
       coverNote: z.string().max(2000).optional(),
     }),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { data: survivor } = await supabase
-      .from("survivors")
-      .select("id, ngo_id")
-      .eq("id", data.survivorId)
-      .single();
-    if (!survivor) throw new Error("Survivor not found");
+    // 1. Resolve survivor record
+    let targetSurvivorId = data.survivorId;
+    let targetNgoId: string | null = null;
 
+    if (targetSurvivorId) {
+      // If survivorId was passed (e.g. by NGO), verify access
+      const { data: s } = await supabase
+        .from("survivors")
+        .select("id, ngo_id")
+        .eq("id", targetSurvivorId)
+        .single();
+      if (!s) throw new Error("Survivor record not found");
+      targetNgoId = s.ngo_id;
+    } else {
+      // Auto-resolve survivor linked to the authenticated user
+      const { data: s } = await supabase
+        .from("survivors")
+        .select("id, ngo_id")
+        .eq("linked_user_id", userId)
+        .maybeSingle();
+
+      if (!s) {
+        throw new Error(
+          "Please complete your survivor profile before applying for jobs.",
+        );
+      }
+      targetSurvivorId = s.id;
+      targetNgoId = s.ngo_id;
+    }
+
+    // 2. Check for duplicate application
+    const { data: existingApp } = await supabase
+      .from("job_applications")
+      .select("id, status")
+      .eq("job_id", data.jobId)
+      .eq("survivor_id", targetSurvivorId)
+      .maybeSingle();
+
+    if (existingApp) {
+      throw new Error("You have already submitted an application for this job.");
+    }
+
+    // 3. Verify job exists and is published
+    const { data: job, error: jobErr } = await supabase
+      .from("jobs")
+      .select("id, title, status, recruiters(user_id)")
+      .eq("id", data.jobId)
+      .single();
+
+    if (jobErr || !job || job.status !== "published") {
+      throw new Error("This job is no longer accepting applications.");
+    }
+
+    // 4. Insert job application
     const { data: app, error } = await supabase
       .from("job_applications")
       .insert({
         job_id: data.jobId,
-        survivor_id: data.survivorId,
-        ngo_id: survivor.ngo_id,
-        cover_note: data.coverNote ?? null,
+        survivor_id: targetSurvivorId,
+        ngo_id: targetNgoId,
+        cover_note: data.coverNote?.trim() || null,
+        status: "submitted",
       })
       .select()
       .single();
-    if (error) throw new Error(error.message);
+
+    if (error) {
+      if (error.code === "23505") {
+        throw new Error("You have already submitted an application for this job.");
+      }
+      throw new Error(error.message);
+    }
 
     const { writeAudit } = await import("@/lib/audit.server");
     await writeAudit(supabase, {
@@ -190,13 +270,9 @@ export const applyToJob = createServerFn({ method: "POST" })
       action: "application.submit",
       entityType: "job_application",
       entityId: app.id,
+      metadata: { jobId: data.jobId, survivorId: targetSurvivorId },
     });
 
-    const { data: job } = await supabase
-      .from("jobs")
-      .select("title, recruiters(user_id)")
-      .eq("id", data.jobId)
-      .single();
     const recruiterUserId = (job?.recruiters as { user_id: string } | null)?.user_id;
     if (recruiterUserId) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

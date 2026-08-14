@@ -68,7 +68,7 @@ function JobsInner() {
           {jobs.map((j) => (
             <div key={j.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
               <div>
-                <Link to="/recruiter/jobs/$id/edit" params={{ id: j.id }} className="font-medium hover:text-accent">
+                <Link to="/jobs/$id" params={{ id: j.id }} className="font-medium hover:text-accent">
                   {j.title}
                 </Link>
                 <p className="text-sm text-muted-foreground">{j.company_name}</p>
