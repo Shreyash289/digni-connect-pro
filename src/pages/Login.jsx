@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -13,10 +13,14 @@ export default function Login() {
   }, [])
 
   const demoAccounts = {
-    survivor: { email: 'survivor@carevia.org', label: 'Survivor Demo' },
-    recruiter: { email: 'recruiter@carevia.org', label: 'Recruiter Demo' },
-    ngo: { email: 'ngo@carevia.org', label: 'NGO Demo' },
-    admin: { email: 'admin@carevia.org', label: 'Admin Demo' }
+    survivor: { email: 'survivor@demo.carevia', label: 'Survivor Demo' },
+    recruiter: { email: 'recruiter@demo.carevia', label: 'Recruiter Demo' },
+    ngo: { email: 'ngo@demo.carevia', label: 'NGO Demo' },
+    admin: { email: 'admin@demo.carevia', label: 'Admin Demo' }
+  }
+
+  const isValidEmail = (emailStr) => {
+    return emailStr.includes('@') && emailStr.includes('.')
   }
 
   const handleDemoLogin = (role) => {
@@ -29,9 +33,11 @@ export default function Login() {
   }
 
   const handleRequestOTP = () => {
-    if (email) {
+    if (email && isValidEmail(email)) {
       localStorage.setItem('email', email)
       setStep('otp')
+    } else {
+      alert('Please enter a valid email (example@gmail.com)')
     }
   }
 
@@ -138,7 +144,6 @@ export default function Login() {
           width: '100%',
           zIndex: 1000
         }}>
-          {/* Orb 1 - Blue */}
           <div style={{
             position: 'absolute',
             width: 120,
@@ -150,7 +155,6 @@ export default function Login() {
             left: '10%'
           }} className="orb-1" />
 
-          {/* Orb 2 - Teal */}
           <div style={{
             position: 'absolute',
             width: 100,
@@ -162,7 +166,6 @@ export default function Login() {
             right: '12%'
           }} className="orb-2" />
 
-          {/* Orb 3 - Cyan */}
           <div style={{
             position: 'absolute',
             width: 90,
@@ -174,14 +177,12 @@ export default function Login() {
             right: '8%'
           }} className="orb-3" />
 
-          {/* Content */}
           <div style={{
             textAlign: 'center',
             position: 'relative',
             zIndex: 10,
             color: '#fff'
           }}>
-            {/* Logo Circle */}
             <div style={{
               width: 80,
               height: 80,
@@ -198,7 +199,6 @@ export default function Login() {
               C
             </div>
 
-            {/* Main Title */}
             <h1 style={{
               fontSize: 40,
               fontWeight: 800,
@@ -209,7 +209,6 @@ export default function Login() {
               CAREVIA
             </h1>
 
-            {/* Subtitle */}
             <p style={{
               fontSize: 12,
               letterSpacing: '0.1em',
@@ -221,7 +220,6 @@ export default function Login() {
               Survivor Repository
             </p>
 
-            {/* Loading Indicator */}
             <div style={{
               marginTop: 40,
               display: 'flex',
@@ -257,7 +255,6 @@ export default function Login() {
       {/* LOGIN PAGE */}
       {!showSplash && (
         <div className="login-page" style={{ display: 'flex', minHeight: '100vh', background: '#FAF9F6', overflow: 'hidden' }}>
-          {/* Left Side */}
           <div style={{
             flex: 1,
             background: '#0C1F3F',
@@ -271,7 +268,6 @@ export default function Login() {
             position: 'relative',
             overflow: 'hidden'
           }}>
-            {/* Floating Element 1 */}
             <div style={{
               position: 'absolute',
               top: '15%',
@@ -283,7 +279,6 @@ export default function Login() {
               border: '2px solid rgba(37, 99, 235, 0.3)'
             }} className="orb-1" />
 
-            {/* Floating Element 2 */}
             <div style={{
               position: 'absolute',
               bottom: '20%',
@@ -295,7 +290,6 @@ export default function Login() {
               border: '1px solid rgba(13, 148, 136, 0.2)'
             }} className="orb-2" style={{ animationDelay: '-2s' }} />
 
-            {/* Glow Dots */}
             <div style={{
               position: 'absolute',
               top: '30%',
@@ -316,9 +310,7 @@ export default function Login() {
               background: '#0D9488'
             }} className="splash-loading" style={{ animationDelay: '-1.5s' }} />
 
-            {/* Content */}
             <div style={{ position: 'relative', zIndex: 10 }} className="form-fadeIn">
-              {/* Logo */}
               <div style={{
                 width: 70,
                 height: 70,
@@ -335,7 +327,6 @@ export default function Login() {
                 C
               </div>
 
-              {/* Title */}
               <h1 style={{
                 fontSize: 32,
                 fontWeight: 800,
@@ -355,7 +346,6 @@ export default function Login() {
                 Survivor Repository
               </p>
 
-              {/* Mission */}
               <div style={{
                 maxWidth: 320,
                 marginBottom: 40
@@ -377,7 +367,6 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Stats */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 <div>
                   <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 3 }}>500+</div>
@@ -395,7 +384,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Right Side */}
           <div style={{
             flex: 1,
             padding: 60,
@@ -404,7 +392,6 @@ export default function Login() {
             justifyContent: 'center'
           }}>
             <div style={{ maxWidth: 360, margin: '0 auto', width: '100%' }} className="form-fadeIn">
-              {/* Header */}
               <div style={{ marginBottom: 28 }}>
                 <h2 style={{
                   fontSize: 22,
@@ -416,13 +403,12 @@ export default function Login() {
                   {step === 'email' ? 'Welcome Back' : 'Verify OTP'}
                 </h2>
                 <p style={{ fontSize: 12, color: '#6B7280' }}>
-                  {step === 'email' 
-                    ? 'Sign in to your CAREVIA account' 
+                  {step === 'email'
+                    ? 'Sign in to your CAREVIA account'
                     : 'Enter the code sent to your email'}
                 </p>
               </div>
 
-              {/* Email Step */}
               {step === 'email' && (
                 <>
                   <div style={{ marginBottom: 18 }}>
@@ -439,7 +425,7 @@ export default function Login() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="survivor@carevia.org"
+                      placeholder="example@gmail.com"
                       style={{
                         width: '100%',
                         padding: '11px 13px',
@@ -455,17 +441,17 @@ export default function Login() {
 
                   <button
                     onClick={handleRequestOTP}
-                    disabled={!email}
+                    disabled={!email || !isValidEmail(email)}
                     style={{
                       width: '100%',
                       padding: '11px 13px',
-                      background: email ? '#2563EB' : '#D1D5DB',
+                      background: (email && isValidEmail(email)) ? '#2563EB' : '#D1D5DB',
                       color: '#fff',
                       border: 'none',
                       borderRadius: 6,
                       fontSize: 13,
                       fontWeight: 600,
-                      cursor: email ? 'pointer' : 'not-allowed',
+                      cursor: (email && isValidEmail(email)) ? 'pointer' : 'not-allowed',
                       marginBottom: 18,
                       fontFamily: 'Inter',
                       transition: 'background 0.3s'
@@ -474,7 +460,6 @@ export default function Login() {
                     Send OTP →
                   </button>
 
-                  {/* Demo Buttons */}
                   <div style={{
                     padding: 14,
                     background: '#EFF6FF',
@@ -514,10 +499,30 @@ export default function Login() {
                       ))}
                     </div>
                   </div>
+
+                  <div style={{
+                    marginTop: 18,
+                    paddingTop: 14,
+                    borderTop: '0.5px solid #E5E7EB',
+                    fontSize: 12,
+                    color: '#6B7280',
+                    textAlign: 'center'
+                  }}>
+                    New user?{' '}
+                    <Link
+                      to="/signup"
+                      style={{
+                        color: '#2563EB',
+                        textDecoration: 'none',
+                        fontWeight: 600
+                      }}
+                    >
+                      Create an account
+                    </Link>
+                  </div>
                 </>
               )}
 
-              {/* OTP Step */}
               {step === 'otp' && (
                 <>
                   <div style={{ marginBottom: 18 }}>
@@ -587,7 +592,6 @@ export default function Login() {
                 </>
               )}
 
-              {/* Footer */}
               <div style={{
                 marginTop: 20,
                 paddingTop: 14,

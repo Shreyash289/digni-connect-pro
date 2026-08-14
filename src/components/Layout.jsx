@@ -1,138 +1,213 @@
-import { useNavigate, useLocation } from 'react-router-dom'
-
-const MENUS = {
-  survivor: [
-    { icon: '🏠', label: 'Dashboard',       path: '/survivor' },
-    { icon: '👤', label: 'My Profile',       path: '/survivor/profile' },
-    { icon: '🤖', label: 'AI Mentor',        path: '/survivor/ai' },
-    { icon: '💼', label: 'Job Board',        path: '/survivor/jobs' },
-    { icon: '📋', label: 'My Applications', path: '/survivor/applications' },
-    { icon: '📄', label: 'My Documents',     path: '/survivor/docs' },
-    { icon: '🤖', label: 'AI Mentor', path: '/survivor/ai' },
-  ],
-  recruiter: [
-    { icon: '🏠', label: 'Dashboard',       path: '/recruiter' },
-    { icon: '🔍', label: 'Search Talent',   path: '/recruiter/search' },
-    { icon: '📌', label: 'Shortlisted',     path: '/recruiter/shortlisted' },
-    { icon: '💼', label: 'My Job Posts',    path: '/recruiter/jobs' },
-    { icon: '📅', label: 'My Interviews',   path: '/recruiter/interviews' },
-  ],
-  ngo: [
-    { icon: '🏠', label: 'Dashboard',       path: '/ngo' },
-    { icon: '👥', label: 'My Survivors',    path: '/ngo/survivors' },
-    { icon: '➕', label: 'Add Survivor',    path: '/ngo/add' },
-    { icon: '📂', label: 'Documents',       path: '/ngo/documents' },
-    { icon: '📈', label: 'Progress',        path: '/ngo/progress' },
-  ],
-  admin: [
-    { icon: '🏠', label: 'Dashboard',       path: '/admin' },
-    { icon: '✅', label: 'Approvals',       path: '/admin/approvals' },
-    { icon: '🤝', label: 'NGO Partners',    path: '/admin/ngos' },
-    { icon: '🔎', label: 'Recruiters',      path: '/admin/recruiters' },
-    { icon: '📊', label: 'Analytics',       path: '/admin/analytics' },
-    { icon: '👤', label: 'User Management', path: '/admin/users' },
-    { icon: '📋', label: 'Audit Logs', path: '/admin/logs' },
-    { icon: '📊', label: 'Analytics', path: '/admin/analytics' },
-  ],
-}
-
-const ROLE_LABELS = {
-  survivor: 'Survivor Portal',
-  recruiter: 'Recruiter Portal',
-  ngo: 'NGO Partner Portal',
-  admin: 'Admin Command',
-}
-
-const ROLE_COLORS = {
-  survivor: '#0D9488',
-  recruiter: '#7C3AED',
-  ngo: '#2563EB',
-  admin: '#DC2626',
-}
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
-  const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const role = localStorage.getItem('role') || 'survivor'
-  const email = localStorage.getItem('email') || 'user@carevia.org'
-  const menu = MENUS[role] || MENUS.survivor
 
   const handleLogout = () => {
     localStorage.clear()
     navigate('/')
   }
 
+  const MENUS = {
+    survivor: [
+      { icon: '🏠', label: 'Dashboard', path: '/survivor' },
+      { icon: '👤', label: 'My Profile', path: '/survivor/profile' },
+      { icon: '💼', label: 'Job Board', path: '/survivor/jobs' },
+      { icon: '📋', label: 'My Applications', path: '/survivor/applications' },
+      { icon: '📄', label: 'My Documents', path: '/survivor/docs' },
+      { icon: '🤖', label: 'AI Mentor', path: '/survivor/ai' },
+    ],
+    recruiter: [
+      { icon: '🏠', label: 'Dashboard', path: '/recruiter' },
+      { icon: '🔍', label: 'Search Talent', path: '/recruiter/search' },
+      { icon: '📌', label: 'Shortlisted', path: '/recruiter/shortlisted' },
+      { icon: '📅', label: 'My Interviews', path: '/recruiter/interviews' },
+    ],
+    ngo: [
+      { icon: '🏠', label: 'Dashboard', path: '/ngo' },
+      { icon: '👥', label: 'Manage Survivors', path: '/ngo/survivors' },
+      { icon: '📈', label: 'Progress Tracking', path: '/ngo/progress' },
+      { icon: '📄', label: 'Document Verification', path: '/ngo/documents' },
+    ],
+    admin: [
+      { icon: '🏠', label: 'Dashboard', path: '/admin' },
+      { icon: '👤', label: 'User Management', path: '/admin/users' },
+      { icon: '📋', label: 'Audit Logs', path: '/admin/logs' },
+      { icon: '📊', label: 'Analytics', path: '/admin/analytics' },
+    ]
+  }
+
+  const menu = MENUS[role] || MENUS.survivor
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#F8F9FA' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#FAF9F6' }}>
       {/* Sidebar */}
-      <aside className="sidebar" style={{ display: 'flex', flexDirection: 'column', padding: '0', position: 'sticky', top: 0, height: '100vh' }}>
+      <div style={{
+        width: sidebarOpen ? 260 : 80,
+        background: '#0C1F3F',
+        color: '#fff',
+        padding: 20,
+        transition: 'width 0.3s',
+        overflowY: 'auto',
+        borderRight: '0.5px solid rgba(255,255,255,0.1)'
+      }}>
         {/* Logo */}
-        <div style={{ padding: '20px 20px 16px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 8, background: ROLE_COLORS[role], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: 'Plus Jakarta Sans' }}>C</div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 32,
+          cursor: 'pointer'
+        }} onClick={() => navigate('/survivor')}>
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: 8,
+            background: '#2563EB',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 20,
+            fontWeight: 800
+          }}>
+            C
+          </div>
+          {sidebarOpen && (
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: 'Plus Jakarta Sans' }}>CAREVIA</div>
-              <div style={{ fontSize: 10, color: '#6B7280', letterSpacing: '0.04em' }}>SURVIVOR REPOSITORY</div>
+              <div style={{ fontSize: 14, fontWeight: 800, fontFamily: 'Plus Jakarta Sans' }}>CAREVIA</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)' }}>v1.0</div>
             </div>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: '6px 10px' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: ROLE_COLORS[role], letterSpacing: '0.06em', textTransform: 'uppercase' }}>{ROLE_LABELS[role]}</div>
-          </div>
+          )}
         </div>
 
         {/* Menu */}
-        <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
           {menu.map(item => (
-            <div
-              key={item.path}
-              className={`sidebar-link ${location.pathname === item.path ? 'active' : ''}`}
-              onClick={() => navigate(item.path)}
-            >
-              <span style={{ fontSize: 16 }}>{item.icon}</span>
-              <span>{item.label}</span>
-            </div>
+            <Link key={item.path} to={item.path} style={{ textDecoration: 'none' }}>
+              <div style={{
+                padding: '12px 12px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 500,
+                transition: 'background 0.2s',
+                background: 'rgba(255,255,255,0.05)',
+                '&:hover': { background: 'rgba(255,255,255,0.1)' }
+              }} className="sidebar-item">
+                <span style={{ fontSize: 16 }}>{item.icon}</span>
+                {sidebarOpen && <span>{item.label}</span>}
+              </div>
+            </Link>
           ))}
-        </nav>
+        </div>
 
-        {/* User + Logout */}
-        <div style={{ padding: '12px', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: '8px 10px' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: ROLE_COLORS[role], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
-              {email.charAt(0).toUpperCase()}
-            </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: 13, color: '#F9FAFB', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
-              <div style={{ fontSize: 11, color: '#6B7280', textTransform: 'capitalize' }}>{role}</div>
-            </div>
+        {/* Logout */}
+        {/* User Profile */}
+        <div style={{
+          padding: 12,
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 8,
+          marginBottom: 16,
+          borderTop: '0.5px solid rgba(255,255,255,0.1)',
+          paddingTop: 16
+        }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>LOGGED IN AS</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 2 }}>
+            {localStorage.getItem('email') || 'User'}
           </div>
-          <button onClick={handleLogout} style={{ width: '100%', padding: '9px', borderRadius: 8, background: 'rgba(220,38,38,0.12)', color: '#F87171', border: '0.5px solid rgba(220,38,38,0.2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter' }}>
-            ← Logout
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', textTransform: 'capitalize', marginBottom: 12 }}>
+            {role.toUpperCase()} Portal
+          </div>
+        </div>
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          style={{
+            width: '100%',
+            padding: '12px 12px',
+            borderRadius: 8,
+            background: 'rgba(220, 38, 38, 0.1)',
+            color: '#FCA5A5',
+            border: '0.5px solid rgba(220, 38, 38, 0.3)',
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8
+          }}
+        >
+          <span>🚪</span>
+          {sidebarOpen && <span>Logout</span>}
+        </button>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {/* Header */}
+        <div style={{
+          padding: '16px 20px',
+          background: '#fff',
+          borderBottom: '0.5px solid #E5E7EB',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: 20,
+              cursor: 'pointer',
+              color: '#0C1F3F'
+            }}
+          >
+            ☰
           </button>
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <main style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
-        {/* Top bar */}
-        <div style={{ background: '#fff', borderBottom: '0.5px solid #E5E7EB', padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans' }}>
-              {menu.find(m => m.path === location.pathname)?.label || 'Dashboard'}
-            </div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>Digital Survivor Repository — CAREVIA</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', animation: 'pulse-dot 2s infinite' }} />
-            <span style={{ fontSize: 12, color: '#059669', fontWeight: 500 }}>System Live</span>
-            <div style={{ width: 1, height: 20, background: '#E5E7EB' }} />
-            <span style={{ fontSize: 13, color: '#374151' }}>June 2025</span>
+          <div style={{ fontSize: 12, color: '#6B7280' }}>
+            {role.toUpperCase()} PORTAL
           </div>
         </div>
 
-        <div style={{ padding: '28px' }} className="fade-in">
+        {/* Content */}
+        <div style={{ padding: 24 }}>
           {children}
         </div>
-      </main>
+      </div>
+
+      <style>{`
+        .sidebar-item:hover {
+          background: rgba(255,255,255,0.1) !important;
+        }
+        .card {
+          background: #fff;
+          border-radius: 8px;
+          border: 0.5px solid #E5E7EB;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .progress-track {
+          width: 100%;
+          height: 6px;
+          background: #E5E7EB;
+          border-radius: 3px;
+          overflow: hidden;
+        }
+        .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #2563EB, #0D9488);
+          border-radius: 3px;
+        }
+      `}</style>
     </div>
   )
 }
