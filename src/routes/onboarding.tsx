@@ -27,9 +27,10 @@ function Onboarding() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/onboarding" });
   const initialRole = search.role as AppRole | undefined;
-  const [step, setStep] = useState<"role" | "ngo" | "recruiter">(() => {
+  const [step, setStep] = useState<"role" | "ngo" | "recruiter" | "admin">(() => {
     if (initialRole === "ngo_partner") return "ngo";
     if (initialRole === "recruiter") return "recruiter";
+    if (initialRole === "admin") return "admin";
     return "role";
   });
   const [chosen, setChosen] = useState<AppRole | null>(initialRole ?? null);
@@ -55,21 +56,7 @@ function Onboarding() {
     if (initialRole === "admin" && !autoAssigned) {
       setAutoAssigned(true);
       setChosen("admin");
-      void (async () => {
-        const { data: userResp } = await supabase.auth.getUser();
-        if (!userResp.user?.id) {
-          toast.error("Session expired. Please sign in again.");
-          navigate({ to: "/auth" });
-          return;
-        }
-        const { error } = await requestAdminSignupRole({});
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-        await reload();
-        navigate({ to: dashboardPathFor(["admin"]) });
-      })();
+      setStep("admin");
       return;
     }
 
@@ -105,23 +92,8 @@ function Onboarding() {
               setChosen(r);
               if (r === "ngo_partner") setStep("ngo");
               else if (r === "recruiter") setStep("recruiter");
-              else if (r === "admin") {
-                (async () => {
-                  const { data: userResp } = await supabase.auth.getUser();
-                  if (!userResp.user?.id) {
-                    toast.error("Session expired. Please sign in again.");
-                    navigate({ to: "/auth" });
-                    return;
-                  }
-                  const { error } = await requestAdminSignupRole({});
-                  if (error) {
-                    toast.error(error.message);
-                    return;
-                  }
-                  await reload();
-                  navigate({ to: dashboardPathFor(["admin"]) });
-                })();
-              } else void grantRoleAndGo(r, navigate);
+              else if (r === "admin") setStep("admin");
+              else void grantRoleAndGo(r, navigate);
             }}
           />
         ) : step === "ngo" ? (
@@ -129,6 +101,14 @@ function Onboarding() {
             onDone={async () => {
               if (!chosen) return;
               await grantRoleAndGo(chosen, navigate);
+            }}
+            onBack={() => setStep("role")}
+          />
+        ) : step === "admin" ? (
+          <AdminForm
+            onDone={async () => {
+              await reload();
+              navigate({ to: dashboardPathFor(["admin"]) });
             }}
             onBack={() => setStep("role")}
           />
@@ -310,6 +290,45 @@ function NgoForm({ onDone, onBack }: { onDone: () => void; onBack: () => void })
       </div>
       <Button type="submit" disabled={saving}>
         {saving ? "Submitting…" : "Submit for review"}
+      </Button>
+    </form>
+  );
+}
+
+function AdminForm({ onDone, onBack }: { onDone: () => void; onBack: () => void }) {
+  const [code, setCode] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await requestAdminSignupRole({ data: { code } });
+      toast.success("You're all set.");
+      await onDone();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not verify invite code.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-5">
+      <div>
+        <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
+          ← Back
+        </button>
+        <h1 className="mt-2 font-display text-3xl font-bold text-primary">Admin access</h1>
+        <p className="mt-2 text-muted-foreground">
+          Enter the admin invite code shared with you by the CAREVIA team.
+        </p>
+      </div>
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <Field label="Invite code *" v={code} on={setCode} required />
+      </div>
+      <Button type="submit" disabled={saving}>
+        {saving ? "Verifying…" : "Continue"}
       </Button>
     </form>
   );

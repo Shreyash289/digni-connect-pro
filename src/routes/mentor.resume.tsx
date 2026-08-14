@@ -85,10 +85,11 @@ function ResumeManagementPage() {
 
       if (uploadError) throw uploadError;
 
-      // Update database URL & name
-      const publicUrl = `${supabase.storage.from("resumes").getPublicUrl(storagePath).data.publicUrl}`;
+      // The "resumes" bucket is private — there is no working public URL to
+      // store. Persist the storage path as the existence marker; viewing
+      // always goes through getSignedResumeUrl(), which re-derives it fresh.
       await updateMetadataMutation.mutateAsync({
-        resumeUrl: publicUrl,
+        resumeUrl: storagePath,
         resumeName: file.name,
       });
 

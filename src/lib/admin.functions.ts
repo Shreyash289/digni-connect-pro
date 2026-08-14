@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const getAdminIntroRequests = createServerFn({ method: "POST" })
@@ -21,9 +22,17 @@ export const getAdminIntroRequests = createServerFn({ method: "POST" })
 
 export const requestAdminSignupRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ code: z.string().min(1, "Invite code is required") }))
   .handler(async ({ data, context }) => {
-    // Auto-grant admin role to the authenticated account (no invite code required)
-    const { supabaseAdmin, supabase } = await import("@/integrations/supabase/client.server");
+    const requiredCode = process.env.ADMIN_SIGNUP_CODE;
+    if (!requiredCode) {
+      throw new Error("Admin signup is disabled. Ask a platform owner to set ADMIN_SIGNUP_CODE.");
+    }
+    if (data.code !== requiredCode) {
+      throw new Error("Invalid invite code.");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { userId } = context;
 
     const { data: existingRole, error: existingError } = await supabaseAdmin
@@ -88,7 +97,7 @@ export const getAdminUsers = createServerFn({ method: "POST" })
         existing.roles.push(item.role);
         map.set(item.user_id, existing);
         return map;
-      }, new Map<string, { userId: string; email: string | null; createdAt: string | null; roles: string[]; roleAssignedAt: string }>()),
+      }, new Map<string, { userId: string; email: string | null; createdAt: string | null; roles: string[]; roleAssignedAt: string }>()).values(),
     ).sort((a, b) => {
       const createdA = a.createdAt ?? "";
       const createdB = b.createdAt ?? "";

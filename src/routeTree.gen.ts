@@ -39,6 +39,7 @@ import { Route as RecruiterRequestsRouteImport } from './routes/recruiter.reques
 import { Route as RecruiterSearchRouteImport } from './routes/recruiter.search'
 import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
 import { Route as NgoSurvivorsIdRouteImport } from './routes/ngo.survivors.$id'
+import { Route as RecruiterJobsIdEditRouteImport } from './routes/recruiter.jobs.$id.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -190,6 +191,11 @@ const NgoSurvivorsIdRoute = NgoSurvivorsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => NgoSurvivorsRoute,
 } as any)
+const RecruiterJobsIdEditRoute = RecruiterJobsIdEditRouteImport.update({
+  id: '/$id/edit',
+  path: '/$id/edit',
+  getParentRoute: () => RecruiterJobsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -212,7 +218,7 @@ export interface FileRoutesByFullPath {
   '/ngo/requests': typeof NgoRequestsRoute
   '/ngo/survivors': typeof NgoSurvivorsRouteWithChildren
   '/recruiter/analytics': typeof RecruiterAnalyticsRoute
-  '/recruiter/jobs': typeof RecruiterJobsRoute
+  '/recruiter/jobs': typeof RecruiterJobsRouteWithChildren
   '/recruiter/requests': typeof RecruiterRequestsRoute
   '/recruiter/search': typeof RecruiterSearchRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
@@ -222,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/ngo/': typeof NgoIndexRoute
   '/recruiter/': typeof RecruiterIndexRoute
   '/ngo/survivors/$id': typeof NgoSurvivorsIdRoute
+  '/recruiter/jobs/$id/edit': typeof RecruiterJobsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -244,7 +251,7 @@ export interface FileRoutesByTo {
   '/ngo/requests': typeof NgoRequestsRoute
   '/ngo/survivors': typeof NgoSurvivorsRouteWithChildren
   '/recruiter/analytics': typeof RecruiterAnalyticsRoute
-  '/recruiter/jobs': typeof RecruiterJobsRoute
+  '/recruiter/jobs': typeof RecruiterJobsRouteWithChildren
   '/recruiter/requests': typeof RecruiterRequestsRoute
   '/recruiter/search': typeof RecruiterSearchRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/ngo': typeof NgoIndexRoute
   '/recruiter': typeof RecruiterIndexRoute
   '/ngo/survivors/$id': typeof NgoSurvivorsIdRoute
+  '/recruiter/jobs/$id/edit': typeof RecruiterJobsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -277,7 +285,7 @@ export interface FileRoutesById {
   '/ngo/requests': typeof NgoRequestsRoute
   '/ngo/survivors': typeof NgoSurvivorsRouteWithChildren
   '/recruiter/analytics': typeof RecruiterAnalyticsRoute
-  '/recruiter/jobs': typeof RecruiterJobsRoute
+  '/recruiter/jobs': typeof RecruiterJobsRouteWithChildren
   '/recruiter/requests': typeof RecruiterRequestsRoute
   '/recruiter/search': typeof RecruiterSearchRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
@@ -287,6 +295,7 @@ export interface FileRoutesById {
   '/ngo/': typeof NgoIndexRoute
   '/recruiter/': typeof RecruiterIndexRoute
   '/ngo/survivors/$id': typeof NgoSurvivorsIdRoute
+  '/recruiter/jobs/$id/edit': typeof RecruiterJobsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -321,6 +330,7 @@ export interface FileRouteTypes {
     | '/ngo/'
     | '/recruiter/'
     | '/ngo/survivors/$id'
+    | '/recruiter/jobs/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/ngo'
     | '/recruiter'
     | '/ngo/survivors/$id'
+    | '/recruiter/jobs/$id/edit'
   id:
     | '__root__'
     | '/'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/ngo/'
     | '/recruiter/'
     | '/ngo/survivors/$id'
+    | '/recruiter/jobs/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -408,7 +420,7 @@ export interface RootRouteChildren {
   NgoRequestsRoute: typeof NgoRequestsRoute
   NgoSurvivorsRoute: typeof NgoSurvivorsRouteWithChildren
   RecruiterAnalyticsRoute: typeof RecruiterAnalyticsRoute
-  RecruiterJobsRoute: typeof RecruiterJobsRoute
+  RecruiterJobsRoute: typeof RecruiterJobsRouteWithChildren
   RecruiterRequestsRoute: typeof RecruiterRequestsRoute
   RecruiterSearchRoute: typeof RecruiterSearchRoute
   SettingsNotificationsRoute: typeof SettingsNotificationsRoute
@@ -631,6 +643,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NgoSurvivorsIdRouteImport
       parentRoute: typeof NgoSurvivorsRoute
     }
+    '/recruiter/jobs/$id/edit': {
+      id: '/recruiter/jobs/$id/edit'
+      path: '/$id/edit'
+      fullPath: '/recruiter/jobs/$id/edit'
+      preLoaderRoute: typeof RecruiterJobsIdEditRouteImport
+      parentRoute: typeof RecruiterJobsRoute
+    }
   }
 }
 
@@ -644,6 +663,18 @@ const NgoSurvivorsRouteChildren: NgoSurvivorsRouteChildren = {
 
 const NgoSurvivorsRouteWithChildren = NgoSurvivorsRoute._addFileChildren(
   NgoSurvivorsRouteChildren,
+)
+
+interface RecruiterJobsRouteChildren {
+  RecruiterJobsIdEditRoute: typeof RecruiterJobsIdEditRoute
+}
+
+const RecruiterJobsRouteChildren: RecruiterJobsRouteChildren = {
+  RecruiterJobsIdEditRoute: RecruiterJobsIdEditRoute,
+}
+
+const RecruiterJobsRouteWithChildren = RecruiterJobsRoute._addFileChildren(
+  RecruiterJobsRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -667,7 +698,7 @@ const rootRouteChildren: RootRouteChildren = {
   NgoRequestsRoute: NgoRequestsRoute,
   NgoSurvivorsRoute: NgoSurvivorsRouteWithChildren,
   RecruiterAnalyticsRoute: RecruiterAnalyticsRoute,
-  RecruiterJobsRoute: RecruiterJobsRoute,
+  RecruiterJobsRoute: RecruiterJobsRouteWithChildren,
   RecruiterRequestsRoute: RecruiterRequestsRoute,
   RecruiterSearchRoute: RecruiterSearchRoute,
   SettingsNotificationsRoute: SettingsNotificationsRoute,

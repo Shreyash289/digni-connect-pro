@@ -823,3 +823,34 @@ GRANT EXECUTE ON FUNCTION public.check_rate_limit(UUID, TEXT, INTEGER) TO authen
 
 -- Enable realtime for notifications
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+
+-- ===== PHASE 9: Resume upload, AI resume builder =====
+-- (mirrors migrations/20260802000000_resume_and_chat_updates.sql — kept in
+-- sync here so a fresh SQL-editor run stays complete. All statements are
+-- idempotent and safe to re-run on a database that already has Phases 1-8.)
+
+-- Allow NULL ngo_id for self-onboarded survivors (no NGO in the loop)
+ALTER TABLE public.survivors ALTER COLUMN ngo_id DROP NOT NULL;
+
+ALTER TABLE public.survivors ADD COLUMN IF NOT EXISTS resume_url TEXT;
+ALTER TABLE public.survivors ADD COLUMN IF NOT EXISTS resume_name TEXT;
+ALTER TABLE public.survivors ADD COLUMN IF NOT EXISTS resume_uploaded_at TIMESTAMPTZ;
+ALTER TABLE public.survivors ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMPTZ;
+ALTER TABLE public.survivors ADD COLUMN IF NOT EXISTS resume_builder_data JSONB DEFAULT '{}'::jsonb;
+
+-- Let a survivor create their own (NGO-less) profile row
+DROP POLICY IF EXISTS "survivors insert own profile" ON public.survivors;
+CREATE POLICY "survivors insert own profile" ON public.survivors
+  FOR INSERT TO authenticated
+  WITH CHECK (linked_user_id = auth.uid());
+
+-- Resumes storage bucket (private — always accessed via signed URL)
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('resumes', 'resumes', false, 10485760)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "users manage own resumes" ON storage.objects;
+CREATE POLICY "users manage own resumes" ON storage.objects
+  FOR ALL TO authenticated
+  USING (bucket_id = 'resumes' AND (storage.foldername(name))[1] = auth.uid()::text)
+  WITH CHECK (bucket_id = 'resumes' AND (storage.foldername(name))[1] = auth.uid()::text);

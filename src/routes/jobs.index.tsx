@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { Briefcase, MapPin, Loader2 } from "lucide-react";
 import { listPublishedJobs } from "@/lib/jobs.functions";
 import { Logo } from "@/components/brand/Logo";
@@ -21,9 +22,11 @@ export const Route = createFileRoute("/jobs/")({
 });
 
 function JobsIndex() {
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ["published-jobs"],
-    queryFn: () => listPublishedJobs({ data: { page: 1 } }),
+  const [query, setQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  const { data, isLoading } = useQuery({
+    queryKey: ["published-jobs", submittedQuery],
+    queryFn: () => listPublishedJobs({ data: { page: 1, filters: { query: submittedQuery || undefined } } }),
   });
 
   return (
@@ -40,11 +43,16 @@ function JobsIndex() {
         <p className="mt-2 text-muted-foreground">Ethical hiring through CAREVIA's survivor support network.</p>
 
         <div className="mt-8 flex gap-2">
-          <Input placeholder="Search jobs…" id="job-search" className="max-w-sm" />
-          <Button onClick={() => {
-            const q = (document.getElementById("job-search") as HTMLInputElement)?.value;
-            refetch();
-          }}>Search</Button>
+          <Input
+            placeholder="Search jobs…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") setSubmittedQuery(query);
+            }}
+            className="max-w-sm"
+          />
+          <Button onClick={() => setSubmittedQuery(query)}>Search</Button>
         </div>
 
         {isLoading ? (
