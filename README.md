@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Digital Survivor Repository — Interactive Mockup
 
 A fully functional, clickable mockup of the CAREVIA platform showing all 4 user portals, security features, and complete user flows.
@@ -162,3 +163,6 @@ See `SECURITY_PRIVACY_ARCHITECTURE.md` for full production requirements.
 **Built for**: SRM University × RRU Pondicherry × CAREVIA
 **Purpose**: Interactive mockup for government project demo
 **Demo Date**: Tomorrow (show it off! 🎉)
+=======
+
+>>>>>>> ddf4c5eddc87b98305abf3bf40eac5ef5b9eab5f
