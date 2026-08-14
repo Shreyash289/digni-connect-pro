@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const getAdminIntroRequests = createServerFn({ method: "POST" })
@@ -22,16 +21,10 @@ export const getAdminIntroRequests = createServerFn({ method: "POST" })
 
 export const requestAdminSignupRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ code: z.string().min(1, "Invite code is required") }))
-  .handler(async ({ data, context }) => {
-    const requiredCode = process.env.ADMIN_SIGNUP_CODE;
-    if (!requiredCode) {
-      throw new Error("Admin signup is disabled. Ask a platform owner to set ADMIN_SIGNUP_CODE.");
-    }
-    if (data.code !== requiredCode) {
-      throw new Error("Invalid invite code.");
-    }
-
+  .handler(async ({ context }) => {
+    // Bootstrap rule: self-service admin signup only works while the
+    // platform has zero admins. Once one exists, further admins must be
+    // granted the role by an existing admin — no invite code to manage.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { userId } = context;
 
@@ -47,6 +40,19 @@ export const requestAdminSignupRole = createServerFn({ method: "POST" })
     }
     if (existingRole) {
       throw new Error("A role is already assigned to this account.");
+    }
+
+    const { count, error: adminCountError } = await supabaseAdmin
+      .from("user_roles")
+      .select("id", { count: "exact", head: true })
+      .in("role", ["admin", "super_admin"]);
+    if (adminCountError) {
+      throw new Error(adminCountError.message);
+    }
+    if ((count ?? 0) > 0) {
+      throw new Error(
+        "Admin access already has an owner. Ask an existing admin to grant your account the admin role.",
+      );
     }
 
     const { error } = await supabaseAdmin.from("user_roles").insert({
