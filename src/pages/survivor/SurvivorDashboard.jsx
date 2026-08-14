@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { JOBS, STAGES } from '../../data/mockData'
 
-const [survivors] = useState([])
+const profile = { name: 'Meena Rajeshwari', stage: 3, completeness: 85, jobsApplied: 4, interviews: 2, skills: ['Data Entry', 'MS Office', 'Tailoring'], ngo: 'Asha Foundation', location: 'Chennai, Tamil Nadu' }
+
 export default function SurvivorDashboard() {
   const navigate = useNavigate()
   const [appliedJobs, setAppliedJobs] = useState([1])
