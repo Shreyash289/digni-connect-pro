@@ -134,32 +134,6 @@ All use same OTP for demo purposes
 
 ## 🚀 For Production
 
-This mockup is a **visual prototype**. For real deployment, you need:
-- ✅ Supabase backend (database, auth, storage)
-- ✅ Real RLS policies
-- ✅ Document encryption
-- ✅ Payment gateway (recruiter subscriptions)
-- ✅ Email service (OTP, notifications)
-- ✅ AI agent integration
-- ✅ Analytics tracking
-
-See `SECURITY_PRIVACY_ARCHITECTURE.md` for full production requirements.
-
-## 📄 Documentation
-
-- `SECURITY_DEMO_REFERENCE.md` — Quick security reference for presentation
-- `SECURITY_PRIVACY_ARCHITECTURE.md` — Complete security architecture (separate file)
-
-## 💡 Tips for Demo
-
-- Use Chrome DevTools to show responsive design
-- Shortlist a few survivors to show functionality
-- Try different filter combinations
-- Use Admin portal to approve pending profiles
-- Point out data masking in recruiter portal
-
----
-
 **Built for**: SRM University × RRU Pondicherry × CAREVIA
 **Purpose**: Interactive mockup for government project demo
 **Demo Date**: Tomorrow (show it off! 🎉)
