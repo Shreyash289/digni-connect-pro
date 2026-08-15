@@ -175,10 +175,12 @@ function StatCard({
   tone?: "default" | "success";
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <Icon className={`size-4 ${tone === "success" ? "text-success" : "text-accent"}`} />
+        <div className={`grid size-8 place-items-center rounded-lg ${tone === "success" ? "bg-success/10 text-success" : "bg-accent/15 text-accent"}`}>
+          <Icon className="size-4" />
+        </div>
       </div>
       <p className="mt-3 font-display text-3xl font-bold text-primary">{value}</p>
     </div>
@@ -196,7 +198,12 @@ export function StatusBadge({ status }: { status: string }) {
     suspended: { label: "Suspended", cls: "bg-destructive/15 text-destructive" },
   };
   const v = map[status] ?? { label: status, cls: "bg-muted text-muted-foreground" };
-  return <Badge variant="secondary" className={v.cls}>{v.label}</Badge>;
+  return (
+    <Badge variant="secondary" className={`gap-1.5 ${v.cls}`}>
+      <span className="size-1.5 rounded-full bg-current" />
+      {v.label}
+    </Badge>
+  );
 }
 
 function StatusBanner({

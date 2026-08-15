@@ -165,34 +165,33 @@ function RoleChooser({ onPick }: { onPick: (r: AppRole) => void }) {
         <RoleCard
           icon={HeartHandshake}
           title="NGO Partner"
-          body="I represent an NGO and want to onboard survivors, manage their profiles, and track placements."
+          body="Onboard survivors and track their placements."
           cta="Continue as NGO Partner"
           onClick={() => onPick("ngo_partner")}
         />
         <RoleCard
           icon={ShieldCheck}
           title="Admin"
-          body="I manage approvals, review requests, and support the CAREVIA team with platform oversight."
+          body="Review approvals and oversee the platform."
           cta="Continue as Admin"
           onClick={() => onPick("admin")}
         />
         <RoleCard
           icon={Briefcase}
           title="Recruiter"
-          body="I hire ethically and want to discover consented, anonymized survivor profiles through NGO introductions."
+          body="Discover anonymized, consented candidates."
           cta="Continue as Recruiter"
           onClick={() => onPick("recruiter")}
         />
         <RoleCard
           icon={Building2}
           title="Survivor / exploring"
-          body="Set up a personal account with access to the AI career mentor."
+          body="Get your own account and an AI career mentor."
           cta="Continue as survivor"
           onClick={() => onPick("survivor")}
           subtle
         />
       </div>
-
     </div>
   );
 }
@@ -215,18 +214,20 @@ function RoleCard({
   return (
     <button
       onClick={onClick}
-      className={`text-left rounded-2xl border p-6 transition-all ${
+      className={`group text-left rounded-2xl border p-6 transition-all duration-200 hover:-translate-y-0.5 ${
         subtle
-          ? "border-border bg-card hover:border-primary/40"
-          : "border-primary/20 bg-card shadow-sm hover:border-primary/60 hover:shadow-md"
+          ? "border-border bg-card hover:border-primary/40 hover:shadow-md"
+          : "border-primary/20 bg-card shadow-sm hover:border-primary/60 hover:shadow-lg"
       }`}
     >
-      <div className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary">
+      <div className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
         <Icon className="size-5" />
       </div>
       <h3 className="mt-4 text-lg font-semibold text-primary">{title}</h3>
       <p className="mt-1 text-sm text-muted-foreground">{body}</p>
-      <span className="mt-4 inline-block text-sm font-medium text-accent">{cta} →</span>
+      <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent">
+        {cta} <span className="transition-transform group-hover:translate-x-0.5">→</span>
+      </span>
     </button>
   );
 }

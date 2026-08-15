@@ -81,14 +81,23 @@ function Inner() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
-          <div key={c.label} className="rounded-2xl border border-border bg-card p-5">
+          <div
+            key={c.label}
+            className="rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-md"
+          >
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">{c.label}</p>
-              <c.icon
-                className={`size-4 ${
-                  c.tone === "success" ? "text-success" : c.tone === "warning" ? "text-warning-foreground" : "text-accent"
+              <div
+                className={`grid size-8 place-items-center rounded-lg ${
+                  c.tone === "success"
+                    ? "bg-success/10 text-success"
+                    : c.tone === "warning"
+                      ? "bg-warning/15 text-warning-foreground"
+                      : "bg-accent/15 text-accent"
                 }`}
-              />
+              >
+                <c.icon className="size-4" />
+              </div>
             </div>
             <p className="mt-3 font-display text-3xl font-bold text-primary">{c.value}</p>
           </div>

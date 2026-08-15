@@ -66,7 +66,7 @@ function JobsInner() {
       ) : (
         <div className="divide-y divide-border rounded-2xl border border-border bg-card">
           {jobs.map((j) => (
-            <div key={j.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div key={j.id} className="flex flex-wrap items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/40">
               <div>
                 <Link to="/jobs/$id" params={{ id: j.id }} className="font-medium hover:text-accent">
                   {j.title}
