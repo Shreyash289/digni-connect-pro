@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { supabase } from '../integrations/supabase/client'
 
 export default function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [step, setStep] = useState('email')
   const [showSplash, setShowSplash] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500)
@@ -32,18 +34,69 @@ export default function Login() {
     navigate('/select-role')
   }
 
-  const handleRequestOTP = () => {
-    if (email && isValidEmail(email)) {
-      localStorage.setItem('email', email)
+  const handleRequestOTP = async () => {
+    if (!email || !isValidEmail(email)) {
+      alert('Please enter a valid email')
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+        },
+      })
+
+      if (error) {
+        alert('❌ Failed to send OTP: ' + error.message)
+        return
+      }
+
       setStep('otp')
-    } else {
-      alert('Please enter a valid email (example@gmail.com)')
+      alert('✅ OTP sent to ' + email + ' (check spam folder too)')
+    } catch (error) {
+      alert('❌ Error: ' + error.message)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleOTPVerify = () => {
-    localStorage.setItem('isLoggedIn', 'true')
-    navigate('/select-role')
+  const handleOTPVerify = async () => {
+    const otpInput = document.querySelector('input[maxLength="6"]')?.value
+
+    if (!otpInput || otpInput.length !== 6) {
+      alert('Please enter 6-digit OTP')
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpInput,
+        type: 'email',
+      })
+
+      if (error) {
+        alert('❌ Invalid or expired OTP: ' + error.message)
+        return
+      }
+
+      if (data.session) {
+        // Supabase Auth owns the authenticated session.
+        // Do NOT manually store access tokens.
+        // Do NOT create fake authentication state.
+        navigate('/select-role')
+      }
+    } catch (error) {
+      alert('❌ Error: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -288,7 +341,7 @@ export default function Login() {
               borderRadius: '50%',
               background: 'rgba(13, 148, 136, 0.08)',
               border: '1px solid rgba(13, 148, 136, 0.2)'
-            }} className="orb-2" style={{ animationDelay: '-2s' }} />
+            }} className="orb-2" />
 
             <div style={{
               position: 'absolute',
@@ -308,7 +361,7 @@ export default function Login() {
               height: 3,
               borderRadius: '50%',
               background: '#0D9488'
-            }} className="splash-loading" style={{ animationDelay: '-1.5s' }} />
+            }} className="splash-loading" />
 
             <div style={{ position: 'relative', zIndex: 10 }} className="form-fadeIn">
               <div style={{
