@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../integrations/supabase/client'
 import { assignInitialRole, fetchMyRoles, homePathForRoles } from '../lib/roles'
@@ -13,14 +13,14 @@ export default function Signup() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: '',
+    password: '',
+    confirmPassword: '',
     role: 'survivor',
     companyName: '',
   })
-  const [step, setStep] = useState('email') // 'email' or 'verify'
-  const [otp, setOtp] = useState(['', '', '', '', '', ''])
-  const otpRefs = useRef([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [checkEmailMsg, setCheckEmailMsg] = useState(false)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -29,83 +29,48 @@ export default function Signup() {
 
   const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email)
 
-  const canRequestOtp =
+  const canSubmit =
     formData.email &&
     isValidEmail(formData.email) &&
+    formData.password.length >= 8 &&
+    formData.password === formData.confirmPassword &&
     (formData.role !== 'recruiter' || formData.companyName.trim().length > 0)
 
-  const handleRequestOTP = async () => {
-    if (!canRequestOtp) {
-      setError(
-        formData.role === 'recruiter' && !formData.companyName.trim()
-          ? 'Please enter your company name'
-          : 'Please enter a valid email',
-      )
+  const handleSignup = async () => {
+    if (!formData.email || !isValidEmail(formData.email)) {
+      setError('Please enter a valid email')
+      return
+    }
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+    if (formData.role === 'recruiter' && !formData.companyName.trim()) {
+      setError('Please enter your company name')
       return
     }
 
     setError('')
     setLoading(true)
     try {
-      const { error: otpError } = await supabase.auth.signInWithOtp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
-        options: { shouldCreateUser: true },
+        password: formData.password,
       })
 
-      if (otpError) {
-        setError(otpError.message)
+      if (signUpError) {
+        setError(signUpError.message)
         return
       }
 
-      setOtp(['', '', '', '', '', ''])
-      setStep('verify')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong sending the code.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleOtpChange = (i, val) => {
-    if (!/^\d?$/.test(val)) return
-    const next = [...otp]
-    next[i] = val
-    setOtp(next)
-    if (val && i < 5) otpRefs.current[i + 1]?.focus()
-  }
-
-  const handleOtpKeyDown = (i, e) => {
-    if (e.key === 'Backspace' && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus()
-  }
-
-  const handleVerifyOTP = async () => {
-    const code = otp.join('')
-    if (code.length !== 6) {
-      setError('Please enter the 6-digit code')
-      return
-    }
-
-    setError('')
-    setLoading(true)
-    try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
-        email: formData.email,
-        token: code,
-        type: 'email',
-      })
-
-      if (verifyError) {
-        setError(verifyError.message || 'Invalid or expired code. Please try again.')
-        return
-      }
-
-      if (!data.session) return
-
-      // If this account already has a role (e.g. re-verifying an existing
-      // account), don't try to assign one again — just route them home.
-      const { roles: existingRoles } = await fetchMyRoles()
-      if (existingRoles.length > 0) {
-        navigate(homePathForRoles(existingRoles) ?? '/select-role')
+      if (!data.session) {
+        // Email confirmation is required on this project before a session
+        // is issued — the account exists, but can't pick a role yet.
+        setCheckEmailMsg(true)
         return
       }
 
@@ -113,7 +78,7 @@ export default function Signup() {
       const { roles } = await fetchMyRoles()
       navigate(homePathForRoles(roles) ?? '/select-role')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong verifying the code.')
+      setError(err instanceof Error ? err.message : 'Something went wrong creating your account.')
     } finally {
       setLoading(false)
     }
@@ -155,9 +120,7 @@ export default function Signup() {
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 6 }}>
               Create Account
             </h2>
-            <p style={{ fontSize: 12, color: '#6B7280' }}>
-              {step === 'email' ? 'Join our community' : 'Verify your email'}
-            </p>
+            <p style={{ fontSize: 12, color: '#6B7280' }}>Join our community</p>
           </div>
 
           {error && (
@@ -166,7 +129,20 @@ export default function Signup() {
             </div>
           )}
 
-          {step === 'email' && (
+          {checkEmailMsg ? (
+            <div style={{ padding: 16, background: '#F0FDF4', border: '0.5px solid #BBF7D0', borderRadius: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#166534', marginBottom: 6 }}>
+                ✓ Account created
+              </div>
+              <div style={{ fontSize: 12, color: '#166534', lineHeight: 1.5, marginBottom: 12 }}>
+                This project requires confirming your email before signing in. Check your inbox (and spam folder)
+                for a confirmation link, then come back and sign in with your new password.
+              </div>
+              <Link to="/login" style={{ fontSize: 12, fontWeight: 600, color: '#2563EB', textDecoration: 'none' }}>
+                Go to Sign In →
+              </Link>
+            </div>
+          ) : (
             <>
               <div style={{ marginBottom: 18 }}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
@@ -178,6 +154,43 @@ export default function Signup() {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="example@gmail.com"
+                  autoComplete="email"
+                  style={{
+                    width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
+                    fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  style={{
+                    width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
+                    fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  placeholder="Re-enter your password"
+                  autoComplete="new-password"
                   style={{
                     width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
                     fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box',
@@ -224,17 +237,17 @@ export default function Signup() {
               )}
 
               <button
-                onClick={handleRequestOTP}
-                disabled={loading || !canRequestOtp}
+                onClick={handleSignup}
+                disabled={loading || !canSubmit}
                 style={{
                   width: '100%', padding: '11px 13px',
-                  background: (!loading && canRequestOtp) ? '#2563EB' : '#D1D5DB',
+                  background: (!loading && canSubmit) ? '#2563EB' : '#D1D5DB',
                   color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
-                  cursor: (!loading && canRequestOtp) ? 'pointer' : 'not-allowed',
+                  cursor: (!loading && canSubmit) ? 'pointer' : 'not-allowed',
                   marginBottom: 18, fontFamily: 'Inter',
                 }}
               >
-                {loading ? 'Sending code…' : 'Send Verification Code →'}
+                {loading ? 'Creating account…' : 'Create Account →'}
               </button>
 
               <div style={{ padding: 14, background: '#EFF6FF', border: '0.5px solid #BFDBFE', borderRadius: 6, marginBottom: 18 }}>
@@ -249,65 +262,6 @@ export default function Signup() {
               <div style={{ textAlign: 'center', fontSize: 12, color: '#6B7280' }}>
                 Already have an account? <Link to="/login" style={{ color: '#2563EB', textDecoration: 'none', fontWeight: 600 }}>Sign In</Link>
               </div>
-            </>
-          )}
-
-          {step === 'verify' && (
-            <>
-              <div style={{ marginBottom: 18, padding: 12, background: '#F0FDF4', borderRadius: 6 }}>
-                <div style={{ fontSize: 11, color: '#059669', fontWeight: 600, marginBottom: 4 }}>
-                  ✓ Verification code sent to:
-                </div>
-                <div style={{ fontSize: 12, color: '#0C1F3F', fontWeight: 600 }}>
-                  {formData.email}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
-                  6-Digit Code
-                </label>
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
-                  {otp.map((digit, i) => (
-                    <input
-                      key={i}
-                      className="otp-box"
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      ref={(el) => (otpRefs.current[i] = el)}
-                      onChange={(e) => handleOtpChange(i, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                      disabled={loading}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <button
-                onClick={handleVerifyOTP}
-                disabled={loading}
-                style={{
-                  width: '100%', padding: '11px 13px', background: loading ? '#93C5FD' : '#2563EB', color: '#fff',
-                  border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
-                  cursor: loading ? 'not-allowed' : 'pointer', marginBottom: 10, fontFamily: 'Inter',
-                }}
-              >
-                {loading ? 'Verifying…' : 'Verify & Create Account →'}
-              </button>
-
-              <button
-                onClick={() => { setStep('email'); setError('') }}
-                disabled={loading}
-                style={{
-                  width: '100%', padding: '9px 13px', background: 'transparent', color: '#2563EB',
-                  border: '1px solid #BFDBFE', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', fontFamily: 'Inter',
-                }}
-              >
-                ← Back
-              </button>
             </>
           )}
 

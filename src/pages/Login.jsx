@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../integrations/supabase/client'
 import { fetchMyRoles, homePathForRoles } from '../lib/roles'
@@ -6,12 +6,10 @@ import { fetchMyRoles, homePathForRoles } from '../lib/roles'
 export default function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
-  const [step, setStep] = useState('email')
+  const [password, setPassword] = useState('')
   const [showSplash, setShowSplash] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [otp, setOtp] = useState(['', '', '', '', '', ''])
-  const otpRefs = useRef([])
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500)
@@ -26,68 +24,20 @@ export default function Login() {
     navigate(home ?? '/select-role')
   }
 
-  const handleRequestOTP = async () => {
-    if (!email || !isValidEmail(email)) {
-      setError('Please enter a valid email address')
+  const handleLogin = async (e) => {
+    e?.preventDefault()
+    if (!email || !isValidEmail(email) || !password) {
+      setError('Please enter a valid email and password')
       return
     }
 
     setError('')
     setLoading(true)
     try {
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
-      })
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
-      if (otpError) {
-        if (/user not found|signups not allowed|otp_disabled/i.test(otpError.message)) {
-          setError("No account found for that email. Use 'Create an account' below to sign up first.")
-        } else {
-          setError(otpError.message)
-        }
-        return
-      }
-
-      setOtp(['', '', '', '', '', ''])
-      setStep('otp')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong sending the code.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleOtpChange = (i, val) => {
-    if (!/^\d?$/.test(val)) return
-    const next = [...otp]
-    next[i] = val
-    setOtp(next)
-    if (val && i < 5) otpRefs.current[i + 1]?.focus()
-  }
-
-  const handleOtpKeyDown = (i, e) => {
-    if (e.key === 'Backspace' && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus()
-  }
-
-  const handleOTPVerify = async () => {
-    const code = otp.join('')
-    if (code.length !== 6) {
-      setError('Please enter the 6-digit code')
-      return
-    }
-
-    setError('')
-    setLoading(true)
-    try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: 'email',
-      })
-
-      if (verifyError) {
-        setError(verifyError.message || 'Invalid or expired code. Please try again.')
+      if (signInError) {
+        setError(signInError.message || 'Invalid email or password.')
         return
       }
 
@@ -95,7 +45,7 @@ export default function Login() {
         await routeAfterAuth()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong verifying the code.')
+      setError(err instanceof Error ? err.message : 'Something went wrong signing in.')
     } finally {
       setLoading(false)
     }
@@ -239,11 +189,9 @@ export default function Login() {
             <div style={{ maxWidth: 360, margin: '0 auto', width: '100%' }} className="form-fadeIn">
               <div style={{ marginBottom: 28 }}>
                 <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 6 }}>
-                  {step === 'email' ? 'Welcome Back' : 'Verify Your Email'}
+                  Welcome Back
                 </h2>
-                <p style={{ fontSize: 12, color: '#6B7280' }}>
-                  {step === 'email' ? 'Sign in to your CAREVIA account' : `Enter the 6-digit code sent to ${email}`}
-                </p>
+                <p style={{ fontSize: 12, color: '#6B7280' }}>Sign in to your CAREVIA account</p>
               </div>
 
               {error && (
@@ -252,99 +200,62 @@ export default function Login() {
                 </div>
               )}
 
-              {step === 'email' && (
-                <>
-                  <div style={{ marginBottom: 18 }}>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleRequestOTP()}
-                      placeholder="example@gmail.com"
-                      style={{
-                        width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
-                        fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box', transition: 'border-color 0.3s',
-                      }}
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleRequestOTP}
-                    disabled={loading || !email || !isValidEmail(email)}
+              <form onSubmit={handleLogin}>
+                <div style={{ marginBottom: 18 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="example@gmail.com"
+                    autoComplete="email"
                     style={{
-                      width: '100%', padding: '11px 13px',
-                      background: (!loading && email && isValidEmail(email)) ? '#2563EB' : '#D1D5DB',
-                      color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
-                      cursor: (!loading && email && isValidEmail(email)) ? 'pointer' : 'not-allowed',
-                      marginBottom: 18, fontFamily: 'Inter', transition: 'background 0.3s',
+                      width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
+                      fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box', transition: 'border-color 0.3s',
                     }}
-                  >
-                    {loading ? 'Sending code…' : 'Send OTP →'}
-                  </button>
+                  />
+                </div>
 
-                  <div style={{ textAlign: 'center', fontSize: 12, color: '#6B7280' }}>
-                    New user?{' '}
-                    <Link to="/signup" style={{ color: '#2563EB', textDecoration: 'none', fontWeight: 600 }}>
-                      Create an account
-                    </Link>
-                  </div>
-                </>
-              )}
-
-              {step === 'otp' && (
-                <>
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', marginBottom: 18 }}>
-                    {otp.map((digit, i) => (
-                      <input
-                        key={i}
-                        className="otp-box"
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={digit}
-                        ref={(el) => (otpRefs.current[i] = el)}
-                        onChange={(e) => handleOtpChange(i, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                        disabled={loading}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={handleOTPVerify}
-                    disabled={loading}
+                <div style={{ marginBottom: 18 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
                     style={{
-                      width: '100%', padding: '11px 13px', background: loading ? '#93C5FD' : '#2563EB', color: '#fff',
-                      border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
-                      cursor: loading ? 'not-allowed' : 'pointer', marginBottom: 10, fontFamily: 'Inter',
+                      width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
+                      fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box', transition: 'border-color 0.3s',
                     }}
-                  >
-                    {loading ? 'Verifying…' : 'Verify & Continue →'}
-                  </button>
+                  />
+                </div>
 
-                  <button
-                    onClick={() => { setStep('email'); setError('') }}
-                    disabled={loading}
-                    style={{
-                      width: '100%', padding: '9px 13px', background: 'transparent', color: '#2563EB',
-                      border: '1px solid #BFDBFE', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                      cursor: 'pointer', fontFamily: 'Inter',
-                    }}
-                  >
-                    ← Back to Email
-                  </button>
+                <button
+                  type="submit"
+                  disabled={loading || !email || !isValidEmail(email) || !password}
+                  style={{
+                    width: '100%', padding: '11px 13px',
+                    background: (!loading && email && isValidEmail(email) && password) ? '#2563EB' : '#D1D5DB',
+                    color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
+                    cursor: (!loading && email && isValidEmail(email) && password) ? 'pointer' : 'not-allowed',
+                    marginBottom: 18, fontFamily: 'Inter', transition: 'background 0.3s',
+                  }}
+                >
+                  {loading ? 'Signing in…' : 'Sign In →'}
+                </button>
+              </form>
 
-                  <div style={{ marginTop: 14, fontSize: 12, color: '#6B7280', textAlign: 'center' }}>
-                    Didn't get it? Check spam, or{' '}
-                    <span style={{ color: '#2563EB', fontWeight: 600, cursor: 'pointer' }} onClick={handleRequestOTP}>
-                      resend the code
-                    </span>
-                  </div>
-                </>
-              )}
+              <div style={{ textAlign: 'center', fontSize: 12, color: '#6B7280' }}>
+                New user?{' '}
+                <Link to="/signup" style={{ color: '#2563EB', textDecoration: 'none', fontWeight: 600 }}>
+                  Create an account
+                </Link>
+              </div>
 
               <div style={{ marginTop: 20, paddingTop: 14, borderTop: '0.5px solid #E5E7EB', fontSize: 9, color: '#9CA3AF', textAlign: 'center' }}>
                 🔒 Encrypted & Secure
