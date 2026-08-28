@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { supabase } from '../integrations/supabase/client'
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const role = localStorage.getItem('role') || 'survivor'
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
     localStorage.clear()
-    navigate('/')
+    navigate('/login')
   }
 
   const MENUS = {
@@ -26,7 +28,7 @@ export default function Layout({ children }) {
       { icon: '📌', label: 'Shortlisted', path: '/recruiter/shortlisted' },
       { icon: '📅', label: 'My Interviews', path: '/recruiter/interviews' },
     ],
-    ngo: [
+    ngo_partner: [
       { icon: '🏠', label: 'Dashboard', path: '/ngo' },
       { icon: '👥', label: 'Manage Survivors', path: '/ngo/survivors' },
       { icon: '📈', label: 'Progress Tracking', path: '/ngo/progress' },
