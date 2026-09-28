@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../integrations/supabase/client'
 import { assignInitialRole, fetchMyRoles, homePathForRoles } from '../lib/roles'
+import { authErrorMessage } from '../lib/auth-errors'
 
 const ROLE_OPTIONS = [
   { value: 'survivor', label: 'Survivor looking for employment' },
@@ -63,7 +64,7 @@ export default function Signup() {
       })
 
       if (signUpError) {
-        setError(signUpError.message)
+        setError(authErrorMessage(signUpError))
         return
       }
 
@@ -78,7 +79,7 @@ export default function Signup() {
       const { roles } = await fetchMyRoles()
       navigate(homePathForRoles(roles) ?? '/select-role')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong creating your account.')
+      setError(authErrorMessage(err, 'Something went wrong creating your account.'))
     } finally {
       setLoading(false)
     }

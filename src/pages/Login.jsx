@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../integrations/supabase/client'
 import { fetchMyRoles, homePathForRoles } from '../lib/roles'
+import { authErrorMessage } from '../lib/auth-errors'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -37,7 +38,7 @@ export default function Login() {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
       if (signInError) {
-        setError(signInError.message || 'Invalid email or password.')
+        setError(authErrorMessage(signInError, 'Invalid email or password.'))
         return
       }
 
@@ -45,7 +46,7 @@ export default function Login() {
         await routeAfterAuth()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong signing in.')
+      setError(authErrorMessage(err, 'Something went wrong signing in.'))
     } finally {
       setLoading(false)
     }
