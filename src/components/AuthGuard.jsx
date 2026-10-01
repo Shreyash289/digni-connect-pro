@@ -24,6 +24,21 @@ export default function AuthGuard({ allow, children }) {
         return
       }
 
+      // A suspended user may still hold a valid access token until it expires
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('account_status')
+        .eq('id', session.user.id)
+        .maybeSingle()
+
+      if (!active) return
+
+      if (profile?.account_status === 'suspended') {
+        await supabase.auth.signOut()
+        if (active) navigate('/login?suspended=1', { replace: true })
+        return
+      }
+
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')

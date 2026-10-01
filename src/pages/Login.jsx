@@ -10,7 +10,11 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [showSplash, setShowSplash] = useState(true)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(() =>
+    new URLSearchParams(window.location.search).has('suspended')
+      ? 'Your account has been suspended. Please contact the CAREVIA team.'
+      : ''
+  )
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500)
@@ -38,6 +42,10 @@ export default function Login() {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
       if (signInError) {
+        if (/invalid login credentials/i.test(signInError.message ?? '')) {
+          // Best-effort entry in the admin audit log; never blocks the UI
+          supabase.rpc('log_failed_login', { _email: email }).then(() => {}, () => {})
+        }
         setError(authErrorMessage(signInError, 'Invalid email or password.'))
         return
       }

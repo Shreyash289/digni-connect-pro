@@ -1,57 +1,95 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
+import { supabase } from '../../integrations/supabase/client'
+import {
+  listUsers, setUserStatus, deleteUser, subscribeToTables, roleLabel, formatDate, formatDateTime,
+} from '../../lib/admin'
+
+const th = { padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }
 
 export default function UserManagement() {
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Meena K', email: 'meena@carevia.org', role: 'Survivor', status: 'Active', joined: '2025-05-01' },
-    { id: 2, name: 'Recruiter Co', email: 'recruiter@company.com', role: 'Recruiter', status: 'Active', joined: '2025-05-10' },
-    { id: 3, name: 'NGO Partner', email: 'ngo@partner.org', role: 'NGO', status: 'Active', joined: '2025-04-15' },
-    { id: 4, name: 'Priya S', email: 'priya@carevia.org', role: 'Survivor', status: 'Suspended', joined: '2025-06-01' },
-  ])
-
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [filter, setFilter] = useState('all')
+  const [busyId, setBusyId] = useState(null)
+  const [myId, setMyId] = useState(null)
+  const [live, setLive] = useState(false)
 
-  const filtered = filter === 'all' ? users : users.filter(u => u.role === filter)
+  const load = useCallback(async () => {
+    try {
+      setUsers(await listUsers())
+      setError('')
+    } catch (err) {
+      setError(err.message || 'Could not load users.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  const toggleStatus = (id) => {
-    setUsers(users.map(u => 
-      u.id === id ? { ...u, status: u.status === 'Active' ? 'Suspended' : 'Active' } : u
-    ))
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setMyId(data.user?.id ?? null))
+    load()
+    // audit_logs is included so sign-ins (last_sign_in_at) refresh live too
+    return subscribeToTables('admin-users', ['profiles', 'user_roles', 'audit_logs'], load,
+      (status) => setLive(status === 'SUBSCRIBED'))
+  }, [load])
+
+  const filtered = users.filter((u) => {
+    if (filter === 'all') return true
+    if (filter === 'none') return u.roles.length === 0
+    return u.roles.includes(filter)
+  })
+
+  const activeCount = users.filter((u) => u.account_status === 'active').length
+  const suspendedCount = users.filter((u) => u.account_status === 'suspended').length
+  const rolesInUse = new Set(users.flatMap((u) => u.roles)).size
+
+  const toggleStatus = async (user) => {
+    const next = user.account_status === 'active' ? 'suspended' : 'active'
+    if (next === 'suspended' && !window.confirm(`Suspend ${user.email}? They will be signed out and blocked from signing in.`)) return
+    setBusyId(user.id)
+    try {
+      await setUserStatus(user.id, next)
+      await load()
+    } catch (err) {
+      window.alert(err.message || 'Could not update the user.')
+    } finally {
+      setBusyId(null)
+    }
   }
 
-  const deleteUser = (id) => {
-    if (window.confirm('Delete this user permanently?')) {
-      setUsers(users.filter(u => u.id !== id))
+  const removeUser = async (user) => {
+    if (!window.confirm(`Delete ${user.email} permanently? This cannot be undone.`)) return
+    setBusyId(user.id)
+    try {
+      await deleteUser(user.id)
+      await load()
+    } catch (err) {
+      window.alert(err.message || 'Could not delete the user.')
+    } finally {
+      setBusyId(null)
     }
   }
 
   return (
     <Layout>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          👤 User Management
-        </h1>
-        <p style={{ fontSize: 14, color: '#6B7280' }}>Manage all platform users and permissions</p>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
+            👤 User Management
+          </h1>
+          <p style={{ fontSize: 14, color: '#6B7280' }}>Manage all platform users and permissions</p>
+        </div>
+        <LiveBadge live={live} />
       </div>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        <div style={{ padding: 16, background: '#EFF6FF', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#2563EB', fontFamily: 'Plus Jakarta Sans' }}>{users.length}</div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>Total Users</div>
-        </div>
-        <div style={{ padding: 16, background: '#F0FDF4', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#059669', fontFamily: 'Plus Jakarta Sans' }}>{users.filter(u => u.status === 'Active').length}</div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>Active</div>
-        </div>
-        <div style={{ padding: 16, background: '#FEE2E2', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#DC2626', fontFamily: 'Plus Jakarta Sans' }}>{users.filter(u => u.status === 'Suspended').length}</div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>Suspended</div>
-        </div>
-        <div style={{ padding: 16, background: '#F5F3FF', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#7C3AED', fontFamily: 'Plus Jakarta Sans' }}>3</div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>Roles</div>
-        </div>
+        <Stat value={users.length} label="Total Users" bg="#EFF6FF" color="#2563EB" />
+        <Stat value={activeCount} label="Active" bg="#F0FDF4" color="#059669" />
+        <Stat value={suspendedCount} label="Suspended" bg="#FEE2E2" color="#DC2626" />
+        <Stat value={rolesInUse} label="Roles" bg="#F5F3FF" color="#7C3AED" />
       </div>
 
       {/* Filter */}
@@ -64,11 +102,19 @@ export default function UserManagement() {
           fontFamily: 'Inter'
         }}>
           <option value="all">All Roles</option>
-          <option value="Survivor">Survivors</option>
-          <option value="Recruiter">Recruiters</option>
-          <option value="NGO">NGO Partners</option>
+          <option value="survivor">Survivors</option>
+          <option value="recruiter">Recruiters</option>
+          <option value="ngo_partner">NGO Partners</option>
+          <option value="admin">Admins</option>
+          <option value="none">No role yet</option>
         </select>
       </div>
+
+      {error && (
+        <div style={{ marginBottom: 16, padding: '10px 13px', background: '#FEF2F2', border: '0.5px solid #FECACA', borderRadius: 6, fontSize: 13, color: '#B91C1C' }}>
+          {error}
+        </div>
+      )}
 
       {/* Users Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -76,65 +122,108 @@ export default function UserManagement() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#F9FAFB', borderBottom: '0.5px solid #E5E7EB' }}>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }}>Name</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }}>Email</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }}>Role</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }}>Status</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }}>Joined</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }}>Action</th>
+                <th style={th}>Name</th>
+                <th style={th}>Email</th>
+                <th style={th}>Role</th>
+                <th style={th}>Status</th>
+                <th style={th}>Joined</th>
+                <th style={th}>Last sign-in</th>
+                <th style={th}>Action</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(user => (
-                <tr key={user.id} style={{ borderBottom: '0.5px solid #E5E7EB' }}>
-                  <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: '#0C1F3F' }}>{user.name}</td>
-                  <td style={{ padding: '12px 16px', fontSize: 13, color: '#6B7280' }}>{user.email}</td>
-                  <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 500, color: '#2563EB' }}>{user.role}</td>
-                  <td style={{ padding: '12px 16px' }}>
-                    <span style={{
-                      padding: '4px 10px',
-                      background: user.status === 'Active' ? '#D1FAE5' : '#FEE2E2',
-                      color: user.status === 'Active' ? '#059669' : '#DC2626',
-                      borderRadius: 6,
-                      fontSize: 10,
-                      fontWeight: 600
-                    }}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px 16px', fontSize: 13, color: '#6B7280' }}>{user.joined}</td>
-                  <td style={{ padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => toggleStatus(user.id)} style={{
-                        padding: '6px 10px',
-                        background: user.status === 'Active' ? '#FEE2E2' : '#D1FAE5',
-                        color: user.status === 'Active' ? '#DC2626' : '#059669',
-                        border: 'none',
-                        borderRadius: 4,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        cursor: 'pointer'
+              {loading && (
+                <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', fontSize: 13, color: '#6B7280' }}>Loading users…</td></tr>
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', fontSize: 13, color: '#6B7280' }}>No users found.</td></tr>
+              )}
+              {filtered.map((user) => {
+                const active = user.account_status === 'active'
+                const isMe = user.id === myId
+                const busy = busyId === user.id
+                return (
+                  <tr key={user.id} style={{ borderBottom: '0.5px solid #E5E7EB' }}>
+                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: '#0C1F3F' }}>{user.full_name}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#6B7280' }}>{user.email}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 500, color: user.roles.length ? '#2563EB' : '#9CA3AF' }}>
+                      {user.roles.length ? user.roles.map(roleLabel).join(', ') : 'No role yet'}
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{
+                        padding: '4px 10px',
+                        background: active ? '#D1FAE5' : '#FEE2E2',
+                        color: active ? '#059669' : '#DC2626',
+                        borderRadius: 6,
+                        fontSize: 10,
+                        fontWeight: 600
                       }}>
-                        {user.status === 'Active' ? 'Suspend' : 'Activate'}
-                      </button>
-                      <button onClick={() => deleteUser(user.id)} style={{
-                        padding: '6px 10px',
-                        background: '#FEE2E2',
-                        color: '#DC2626',
-                        border: 'none',
-                        borderRadius: 4,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}>Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {active ? 'Active' : 'Suspended'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#6B7280' }}>{formatDate(user.created_at)}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#6B7280' }}>{formatDateTime(user.last_sign_in_at)}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      {isMe ? (
+                        <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 600 }}>You</span>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button disabled={busy} onClick={() => toggleStatus(user)} style={{
+                            padding: '6px 10px',
+                            background: active ? '#FEE2E2' : '#D1FAE5',
+                            color: active ? '#DC2626' : '#059669',
+                            border: 'none',
+                            borderRadius: 4,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: busy ? 'wait' : 'pointer',
+                            opacity: busy ? 0.6 : 1
+                          }}>
+                            {active ? 'Suspend' : 'Activate'}
+                          </button>
+                          <button disabled={busy} onClick={() => removeUser(user)} style={{
+                            padding: '6px 10px',
+                            background: '#FEE2E2',
+                            color: '#DC2626',
+                            border: 'none',
+                            borderRadius: 4,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: busy ? 'wait' : 'pointer',
+                            opacity: busy ? 0.6 : 1
+                          }}>Delete</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
       </div>
     </Layout>
+  )
+}
+
+function Stat({ value, label, bg, color }) {
+  return (
+    <div style={{ padding: 16, background: bg, borderRadius: 12, textAlign: 'center' }}>
+      <div style={{ fontSize: 24, fontWeight: 800, color, fontFamily: 'Plus Jakarta Sans' }}>{value}</div>
+      <div style={{ fontSize: 12, color: '#6B7280' }}>{label}</div>
+    </div>
+  )
+}
+
+export function LiveBadge({ live }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999,
+      background: live ? '#ECFDF5' : '#F3F4F6', color: live ? '#059669' : '#6B7280', fontSize: 11, fontWeight: 600,
+      whiteSpace: 'nowrap'
+    }}>
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: live ? '#10B981' : '#9CA3AF' }} />
+      {live ? 'Live' : 'Connecting…'}
+    </span>
   )
 }

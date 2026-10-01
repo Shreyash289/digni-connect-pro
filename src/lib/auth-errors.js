@@ -19,6 +19,10 @@ export function authErrorMessage(err, fallback = 'Something went wrong. Please t
       'The Supabase project may be paused or deleted, or VITE_SUPABASE_URL may be wrong.'
   }
 
+  if (raw.toLowerCase().includes('user is banned')) {
+    return 'Your account has been suspended. Please contact the CAREVIA team.'
+  }
+
   if (raw.toLowerCase().includes('invalid api key')) {
     return 'The app is misconfigured: VITE_SUPABASE_PUBLISHABLE_KEY does not belong to this Supabase project.'
   }
