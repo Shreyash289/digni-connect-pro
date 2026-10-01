@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../integrations/supabase/client'
-import { assignInitialRole, fetchMyRoles, homePathForRoles } from '../lib/roles'
+import { assignInitialRole, fetchMyRoles, homePathForRoles, resolveHomeAfterAuth } from '../lib/roles'
 
 const ROLES = [
   { id: 'survivor', icon: '👤', title: 'Survivor / Intern', desc: 'Create your profile, get AI career guidance, track your journey to employment.', color: '#0D9488', bg: '#F0FDFA', border: '#99F6E4' },
@@ -16,9 +16,12 @@ export default function RoleSelect() {
   const [companyPrompt, setCompanyPrompt] = useState(false)
   const [companyName, setCompanyName] = useState('')
 
+  // Only accounts with no role at all should ever see this page
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate('/login', { replace: true })
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return navigate('/login', { replace: true })
+      const home = await resolveHomeAfterAuth()
+      if (home !== '/select-role') navigate(home, { replace: true })
     })
   }, [navigate])
 

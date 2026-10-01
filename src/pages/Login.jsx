@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../integrations/supabase/client'
-import { fetchMyRoles, homePathForRoles } from '../lib/roles'
+import { resolveHomeAfterAuth } from '../lib/roles'
 import { authErrorMessage } from '../lib/auth-errors'
 
 export default function Login() {
@@ -24,9 +24,7 @@ export default function Login() {
   const isValidEmail = (emailStr) => /\S+@\S+\.\S+/.test(emailStr)
 
   async function routeAfterAuth() {
-    const { roles } = await fetchMyRoles()
-    const home = homePathForRoles(roles)
-    navigate(home ?? '/select-role')
+    navigate(await resolveHomeAfterAuth())
   }
 
   const handleLogin = async (e) => {

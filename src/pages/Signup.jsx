@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../integrations/supabase/client'
-import { assignInitialRole, fetchMyRoles, homePathForRoles } from '../lib/roles'
+import { resolveHomeAfterAuth } from '../lib/roles'
 import { authErrorMessage } from '../lib/auth-errors'
 
 const ROLE_OPTIONS = [
@@ -61,6 +61,14 @@ export default function Signup() {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          // Read by the assign_signup_role DB trigger, so the role sticks even
+          // when email confirmation means there's no session yet
+          data: {
+            signup_role: formData.role,
+            ...(formData.role === 'recruiter' ? { company_name: formData.companyName.trim() } : {}),
+          },
+        },
       })
 
       if (signUpError) {
@@ -69,15 +77,13 @@ export default function Signup() {
       }
 
       if (!data.session) {
-        // Email confirmation is required on this project before a session
-        // is issued — the account exists, but can't pick a role yet.
+        // Email confirmation is required before a session is issued. The role
+        // is already saved on the account and applied automatically.
         setCheckEmailMsg(true)
         return
       }
 
-      await assignInitialRole(formData.role, { companyName: formData.companyName.trim() })
-      const { roles } = await fetchMyRoles()
-      navigate(homePathForRoles(roles) ?? '/select-role')
+      navigate(await resolveHomeAfterAuth())
     } catch (err) {
       setError(authErrorMessage(err, 'Something went wrong creating your account.'))
     } finally {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
+import { LiveBadge } from '../../components/ui'
 import { supabase } from '../../integrations/supabase/client'
 import {
   listUsers, setUserStatus, deleteUser, subscribeToTables, roleLabel, formatDate, formatDateTime,
@@ -212,18 +213,5 @@ function Stat({ value, label, bg, color }) {
       <div style={{ fontSize: 24, fontWeight: 800, color, fontFamily: 'Plus Jakarta Sans' }}>{value}</div>
       <div style={{ fontSize: 12, color: '#6B7280' }}>{label}</div>
     </div>
-  )
-}
-
-export function LiveBadge({ live }) {
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999,
-      background: live ? '#ECFDF5' : '#F3F4F6', color: live ? '#059669' : '#6B7280', fontSize: 11, fontWeight: 600,
-      whiteSpace: 'nowrap'
-    }}>
-      <span style={{ width: 7, height: 7, borderRadius: '50%', background: live ? '#10B981' : '#9CA3AF' }} />
-      {live ? 'Live' : 'Connecting…'}
-    </span>
   )
 }

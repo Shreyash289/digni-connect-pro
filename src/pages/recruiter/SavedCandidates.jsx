@@ -1,239 +1,125 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import { SURVIVORS } from '../../data/mockData'
+import {
+  PageHeader, StatGrid, ErrorBanner, EmptyState, Loading, CandidateCard, CandidateProfileModal, InterviewModal,
+  btn, fieldInput, formatDate,
+} from '../../components/ui'
+import { useLiveQuery } from '../../lib/live'
+import { listSavedCandidates, toggleSavedCandidate, updateSavedNotes, scheduleInterview } from '../../lib/careers'
 
 export default function SavedCandidates() {
-  const [savedCandidates, setSavedCandidates] = useState([
-    { ...SURVIVORS[0], savedDate: '2025-06-15', notes: 'Great fit for Data Entry role' },
-    { ...SURVIVORS[2], savedDate: '2025-06-14', notes: 'Excellent communication skills' },
-    { ...SURVIVORS[4], savedDate: '2025-06-10', notes: 'Will follow up next week' }
-  ])
-
+  const { data, loading, error, reload, live, setData } = useLiveQuery(listSavedCandidates, {
+    tables: ['saved_candidates', 'job_applications'],
+  })
   const [filterSkill, setFilterSkill] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
+  const [viewing, setViewing] = useState(null)
+  const [scheduling, setScheduling] = useState(null)
+  const [busyId, setBusyId] = useState(null)
+  const [drafts, setDrafts] = useState({})
 
-  const allSkills = ['all', 'Data Entry', 'Customer Service', 'Administrative', 'Teaching', 'Tailoring']
+  const saved = data ?? []
+  const allSkills = [...new Set(saved.flatMap((c) => c.skills))].sort()
+  const filtered = filterSkill === 'all' ? saved : saved.filter((c) => c.skills.includes(filterSkill))
+  const sorted = [...filtered].sort((a, b) =>
+    sortBy === 'name' ? a.display_name.localeCompare(b.display_name) : new Date(b.saved_at) - new Date(a.saved_at))
 
-  const filtered = filterSkill === 'all' 
-    ? savedCandidates 
-    : savedCandidates.filter(c => c.skills.includes(filterSkill))
-
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === 'recent') return new Date(b.savedDate) - new Date(a.savedDate)
-    if (sortBy === 'name') return a.name.localeCompare(b.name)
-    return 0
-  })
-
-  const removeSaved = (candidateId) => {
-    if (window.confirm('Remove from saved candidates?')) {
-      setSavedCandidates(savedCandidates.filter(c => c.id !== candidateId))
+  const remove = async (c) => {
+    if (!window.confirm(`Remove ${c.display_name} from your shortlist?`)) return
+    setBusyId(c.id)
+    try {
+      await toggleSavedCandidate(c.id)
+      setData((rows) => rows?.filter((r) => r.id !== c.id))
+    } catch (err) {
+      window.alert(err.message || 'Could not remove candidate.')
+    } finally {
+      setBusyId(null)
     }
   }
 
-  const updateNotes = (candidateId, newNotes) => {
-    setSavedCandidates(savedCandidates.map(c => 
-      c.id === candidateId ? { ...c, notes: newNotes } : c
-    ))
+  const saveNotes = async (c) => {
+    const notes = drafts[c.id]
+    if (notes === undefined || notes === (c.notes ?? '')) return
+    try {
+      await updateSavedNotes(c.id, notes)
+      setData((rows) => rows?.map((r) => (r.id === c.id ? { ...r, notes } : r)))
+      setDrafts(({ [c.id]: _, ...rest }) => rest)
+    } catch (err) {
+      window.alert(err.message || 'Could not save notes.')
+    }
   }
 
   return (
     <Layout>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          📌 Saved Candidates
-        </h1>
-        <p style={{ fontSize: 14, color: '#6B7280' }}>Your bookmarked survivor profiles</p>
+      <PageHeader title="📌 Shortlisted Candidates" subtitle="Candidates you've shortlisted from search or from your applicants" live={live} />
+
+      <StatGrid stats={[
+        { label: 'Shortlisted', value: saved.length, color: '#7C3AED', bg: '#F5F3FF' },
+        { label: 'Profile 60%+ complete', value: saved.filter((c) => c.profile_completion >= 60).length, color: '#059669', bg: '#F0FDF4' },
+        { label: 'With notes', value: saved.filter((c) => c.notes).length, color: '#2563EB', bg: '#EFF6FF' },
+      ]} />
+
+      <div className="card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <select style={{ ...fieldInput, width: 'auto' }} value={filterSkill} onChange={(e) => setFilterSkill(e.target.value)}>
+          <option value="all">All skills</option>
+          {allSkills.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select style={{ ...fieldInput, width: 'auto' }} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <option value="recent">Recently shortlisted</option>
+          <option value="name">Name (A–Z)</option>
+        </select>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        <div style={{ padding: 16, background: '#EFF6FF', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#2563EB', fontFamily: 'Plus Jakarta Sans' }}>
-            {savedCandidates.length}
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>Saved Candidates</div>
-        </div>
-        <div style={{ padding: 16, background: '#F0FDF4', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#059669', fontFamily: 'Plus Jakarta Sans' }}>
-            {savedCandidates.filter(c => c.location === 'Chennai').length}
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>In Chennai</div>
-        </div>
-        <div style={{ padding: 16, background: '#F5F3FF', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#7C3AED', fontFamily: 'Plus Jakarta Sans' }}>
-            {savedCandidates.filter(c => c.completeness >= 80).length}
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>High Match</div>
-        </div>
-      </div>
+      <ErrorBanner message={error} />
 
-      {/* Filters */}
-      <div className="card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 16, alignItems: 'center' }}>
-        <div>
-          <label style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, display: 'block', marginBottom: 6 }}>Filter by Skill</label>
-          <select 
-            value={filterSkill}
-            onChange={(e) => setFilterSkill(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 6,
-              border: '0.5px solid #E5E7EB',
-              fontSize: 13,
-              fontFamily: 'Inter'
-            }}
-          >
-            {allSkills.map(skill => (
-              <option key={skill} value={skill}>
-                {skill === 'all' ? 'All Skills' : skill}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, display: 'block', marginBottom: 6 }}>Sort by</label>
-          <select 
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 6,
-              border: '0.5px solid #E5E7EB',
-              fontSize: 13,
-              fontFamily: 'Inter'
-            }}
-          >
-            <option value="recent">Recently Saved</option>
-            <option value="name">Name (A-Z)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Candidates List */}
-      {sorted.length === 0 ? (
-        <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color: '#9CA3AF' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>No saved candidates</div>
-          <div style={{ fontSize: 12 }}>Find talent and save profiles to see them here</div>
-        </div>
+      {loading ? <Loading /> : sorted.length === 0 ? (
+        <EmptyState
+          title="No shortlisted candidates yet"
+          hint="Press 📌 on a candidate in Search Talent, or Shortlist an applicant, to add them here."
+          action={<Link to="/recruiter/search" style={btn('primary', { textDecoration: 'none' })}>Search talent</Link>}
+        />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-          {sorted.map(candidate => (
-            <div key={candidate.id} className="card" style={{ padding: 16 }}>
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    background: `${candidate.color}20`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: candidate.color
-                  }}>
-                    {candidate.initials}
+          {sorted.map((c) => (
+            <CandidateCard
+              key={c.id}
+              c={c}
+              onView={() => setViewing(c)}
+              footer={
+                <>
+                  <div style={{ fontSize: 11, color: '#9CA3AF' }}>Shortlisted {formatDate(c.saved_at)}</div>
+                  <textarea
+                    value={drafts[c.id] ?? c.notes ?? ''}
+                    onChange={(e) => setDrafts((d) => ({ ...d, [c.id]: e.target.value }))}
+                    onBlur={() => saveNotes(c)}
+                    placeholder="Private notes about this candidate (saved automatically)"
+                    style={{ ...fieldInput, fontSize: 12, minHeight: 54, resize: 'vertical' }}
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button style={btn('teal', { flex: 1 })} onClick={() => setScheduling(c)}>📅 Interview</button>
+                    <button style={btn('danger', { flex: 1 })} disabled={busyId === c.id} onClick={() => remove(c)}>Remove</button>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0C1F3F' }}>
-                      {candidate.initials}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#6B7280' }}>
-                      {candidate.age} years • {candidate.location}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ fontSize: 12, color: '#6B7280' }}>
-                  Saved {candidate.savedDate}
-                </div>
-              </div>
-
-              {/* Skills */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', marginBottom: 6 }}>Top Skills</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {candidate.skills.slice(0, 3).map(skill => (
-                    <span key={skill} style={{
-                      padding: '2px 8px',
-                      background: '#F3F4F6',
-                      color: '#374151',
-                      borderRadius: 4,
-                      fontSize: 10,
-                      fontWeight: 500
-                    }}>
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Profile Match */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#6B7280' }}>Profile Match</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>{candidate.completeness}%</span>
-                </div>
-                <div className="progress-track">
-                  <div className="progress-fill" style={{ width: `${candidate.completeness}%` }} />
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div style={{ marginBottom: 12 }}>
-                <textarea
-                  value={candidate.notes}
-                  onChange={(e) => updateNotes(candidate.id, e.target.value)}
-                  placeholder="Add notes about this candidate..."
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: 6,
-                    border: '0.5px solid #E5E7EB',
-                    fontSize: 11,
-                    fontFamily: 'Inter',
-                    minHeight: 50,
-                    resize: 'none'
-                  }}
-                />
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  background: '#2563EB',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}>
-                  View Profile
-                </button>
-                <button 
-                  onClick={() => removeSaved(candidate.id)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    background: '#FEE2E2',
-                    color: '#DC2626',
-                    border: '0.5px solid #FECACA',
-                    borderRadius: 6,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
+                </>
+              }
+            />
           ))}
         </div>
+      )}
+
+      {viewing && <CandidateProfileModal c={viewing} onClose={() => setViewing(null)} />}
+
+      {scheduling && (
+        <InterviewModal
+          title="Schedule interview"
+          candidateName={scheduling.display_name}
+          onClose={() => setScheduling(null)}
+          onSubmit={async (v) => {
+            await scheduleInterview({ survivorId: scheduling.id, ...v })
+            window.alert('Interview scheduled. You can manage it under My Interviews.')
+            reload()
+          }}
+        />
       )}
     </Layout>
   )

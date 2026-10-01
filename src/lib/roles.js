@@ -28,6 +28,28 @@ export function homePathForRoles(roles) {
   return null
 }
 
+// Where to send a user right after sign-in/sign-up. The role picked at signup
+// is stored in user_metadata.signup_role and assigned by a database trigger;
+// if that trigger hasn't run (older accounts / migration not applied yet) we
+// assign it here so the user is never asked to choose a role twice.
+export async function resolveHomeAfterAuth() {
+  let { session, roles } = await fetchMyRoles()
+  if (!session) return '/login'
+
+  if (roles.length === 0) {
+    const meta = session.user.user_metadata ?? {}
+    if (['survivor', 'ngo_partner', 'recruiter'].includes(meta.signup_role)) {
+      try {
+        await assignInitialRole(meta.signup_role, { companyName: meta.company_name || 'My Company' })
+      } catch (err) {
+        console.error(err)
+      }
+      ;({ roles } = await fetchMyRoles())
+    }
+  }
+  return homePathForRoles(roles) ?? '/select-role'
+}
+
 // Persists a self-selected role for a brand-new account.
 // Matches the `self_assign_initial_role` / `self_assign_recruiter_role`
 // RPCs defined in supabase/SQL_EDITOR_FULL_SETUP.sql — 'admin' is

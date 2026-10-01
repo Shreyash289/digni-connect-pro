@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
-import { LiveBadge } from './UserManagement'
+import { LiveBadge } from '../../components/ui'
 import { listAuditLogs, subscribeToTables, describeAuditAction, formatDateTime } from '../../lib/admin'
 
 const th = { padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }

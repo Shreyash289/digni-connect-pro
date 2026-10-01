@@ -13,6 +13,8 @@ import RecruiterDashboard from './pages/recruiter/RecruiterDashboard'
 import SavedCandidates from './pages/recruiter/SavedCandidates'
 import MyInterviews from './pages/recruiter/MyInterviews'
 import SearchSurvivors from './pages/recruiter/SearchSurvivors'
+import JobPostings from './pages/recruiter/JobPostings'
+import Applicants from './pages/recruiter/Applicants'
 import NGODashboard from './pages/ngo/NGODashboard'
 import ManageSurvivors from './pages/ngo/ManageSurvivors'
 import ProgressTracking from './pages/ngo/ProgressTracking'
@@ -46,7 +48,9 @@ export default function App() {
 
         {/* RECRUITER ROUTES */}
         <Route path="/recruiter" element={<AuthGuard allow={RECRUITER}><RecruiterDashboard /></AuthGuard>} />
-        <Route path="/recruiter/search" element={<AuthGuard allow={RECRUITER}><SearchSurvivors /></AuthGuard>} />
+        <Route path="/recruiter/jobs" element={<AuthGuard allow={RECRUITER}><JobPostings /></AuthGuard>} />
+        <Route path="/recruiter/applicants" element={<AuthGuard allow={RECRUITER}><Applicants /></AuthGuard>} />
+        <Route path="/recruiter/search"element={<AuthGuard allow={RECRUITER}><SearchSurvivors /></AuthGuard>} />
         <Route path="/recruiter/shortlisted" element={<AuthGuard allow={RECRUITER}><SavedCandidates /></AuthGuard>} />
         <Route path="/recruiter/interviews" element={<AuthGuard allow={RECRUITER}><MyInterviews /></AuthGuard>} />
 

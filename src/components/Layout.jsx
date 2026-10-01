@@ -24,6 +24,8 @@ export default function Layout({ children }) {
     ],
     recruiter: [
       { icon: '🏠', label: 'Dashboard', path: '/recruiter' },
+      { icon: '💼', label: 'Job Postings', path: '/recruiter/jobs' },
+      { icon: '👥', label: 'Applicants', path: '/recruiter/applicants' },
       { icon: '🔍', label: 'Search Talent', path: '/recruiter/search' },
       { icon: '📌', label: 'Shortlisted', path: '/recruiter/shortlisted' },
       { icon: '📅', label: 'My Interviews', path: '/recruiter/interviews' },
@@ -63,7 +65,7 @@ export default function Layout({ children }) {
           gap: 12,
           marginBottom: 32,
           cursor: 'pointer'
-        }} onClick={() => navigate('/survivor')}>
+        }} onClick={() => navigate(menu[0].path)}>
           <div style={{
             width: 40,
             height: 40,
