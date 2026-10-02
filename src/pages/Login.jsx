@@ -16,9 +16,16 @@ export default function Login() {
       : ''
   )
 
+  const [stats, setStats] = useState(null)
+
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500)
     return () => clearTimeout(timer)
+  }, [])
+
+  // Real platform counters (aggregate numbers only, readable before sign-in)
+  useEffect(() => {
+    supabase.rpc('public_platform_stats').then(({ data }) => data && setStats(data))
   }, [])
 
   const isValidEmail = (emailStr) => /\S+@\S+\.\S+/.test(emailStr)
@@ -175,20 +182,20 @@ export default function Login() {
                   SRM University × RRU Pondicherry × CAREVIA
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                <div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 3 }}>500+</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>Survivors</div>
+              {stats && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                  {[
+                    { value: stats.survivors, label: 'Survivors' },
+                    { value: stats.ngos, label: 'NGO Partners' },
+                    { value: stats.placements, label: 'Placements' },
+                  ].map((s) => (
+                    <div key={s.label}>
+                      <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 3 }}>{Number(s.value).toLocaleString('en-IN')}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>{s.label}</div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 3 }}>50+</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>NGO Partners</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 3 }}>200+</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>Placements</div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 

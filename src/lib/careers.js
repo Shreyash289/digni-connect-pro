@@ -75,6 +75,84 @@ export async function updateInterview(interviewId, patch) {
   if (error) throw error
 }
 
+// ----- NGO partner -----
+export const getMyOrg = () => rpc('ngo_get_my_org')
+export const saveMyOrg = (org) => rpc('ngo_save_my_org', { _p: org })
+export const listNgoSurvivors = async () => (await rpc('ngo_list_survivors')) ?? []
+export const saveNgoSurvivor = (id, profile) => rpc('ngo_save_survivor', { _id: id ?? null, _p: profile })
+
+// ----- documents review (NGO for own survivors, admin for all) -----
+export const listReviewableDocuments = async (status) =>
+  (await rpc('list_reviewable_documents', { _status: status ?? null })) ?? []
+export const reviewDocument = (id, status) => rpc('review_document', { _document_id: id, _status: status })
+
+export async function openDocument(storagePath, fileName) {
+  const { data, error } = await supabase.storage
+    .from('survivor-documents')
+    .createSignedUrl(storagePath, 60, fileName ? { download: fileName } : undefined)
+  if (error) throw error
+  window.open(data.signedUrl, '_blank', 'noopener')
+}
+
+// ----- admin -----
+export const getAdminOverview = () => rpc('admin_overview')
+export const setNgoStatus = (id, status, reason) => rpc('admin_set_ngo_status', { _id: id, _status: status, _reason: reason ?? null })
+export const setRecruiterStatus = (id, status) => rpc('admin_set_recruiter_status', { _id: id, _status: status })
+export const setSurvivorStatus = (id, status, reason) => rpc('admin_set_survivor_status', { _id: id, _status: status, _reason: reason ?? null })
+export const getAdminAnalytics = () => rpc('admin_analytics')
+export const getPublicStats = () => rpc('public_platform_stats')
+
+// ----- survivor journey (same stages for survivor + NGO views) -----
+export const JOURNEY = ['Registered', 'Profile complete', 'Applied to jobs', 'Interviewing', 'Offer received', 'Employed']
+
+// counts: { completion, applications, interviews, offers, hired } → 1..6
+export function journeyStage({ completion = 0, applications = 0, interviews = 0, offers = 0, hired = 0 }) {
+  if (hired > 0) return 6
+  if (offers > 0) return 5
+  if (interviews > 0) return 4
+  if (applications > 0) return 3
+  if (completion >= 60) return 2
+  return 1
+}
+
+export const SURVIVOR_STATUS = {
+  draft: { label: 'Draft', color: '#6B7280', bg: '#F3F4F6' },
+  submitted: { label: 'Awaiting review', color: '#D97706', bg: '#FFFBEB' },
+  under_review: { label: 'Under review', color: '#D97706', bg: '#FFFBEB' },
+  approved: { label: 'Verified', color: '#059669', bg: '#D1FAE5' },
+  rejected: { label: 'Changes needed', color: '#DC2626', bg: '#FEE2E2' },
+}
+
+export const DOC_STATUS = {
+  verified: { label: '✓ Verified', bg: '#D1FAE5', color: '#059669' },
+  pending: { label: '⏳ Pending', bg: '#FEF3C7', color: '#D97706' },
+  rejected: { label: '✕ Rejected', bg: '#FEE2E2', color: '#DC2626' },
+}
+
+export const DOC_TYPES = {
+  id_proof: 'ID Proof', education: 'Education', bgv: 'Background Verification',
+  resume: 'Resume', photo: 'Photograph', other: 'Other',
+}
+
+// Picklist for the skills selector (not sample data — just suggestions)
+export const SKILL_SUGGESTIONS = [
+  'Data Entry', 'MS Office', 'Tailoring', 'Teaching', 'Child Care',
+  'Carpentry', 'Plumbing', 'Cooking', 'Housekeeping', 'Embroidery',
+  'Garment Stitching', 'Electrical Work', 'Accounting', 'Tally',
+  'Security Guard', 'Nursing Assistant', 'Painting', 'Driving (2W)',
+  'Customer Service', 'Tamil Typing', 'Mobile Repair', 'AC Repair',
+]
+
+export function timeAgo(value) {
+  if (!value) return ''
+  const s = Math.round((Date.now() - new Date(value).getTime()) / 1000)
+  if (s < 60) return 'just now'
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`
+  if (s < 86400 * 7) return `${Math.floor(s / 86400)} d ago`
+  return formatDate(value)
+}
+
 // ----- display helpers -----
 export const EMPLOYMENT_TYPES = {
   full_time: 'Full-time',

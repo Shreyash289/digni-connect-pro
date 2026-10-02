@@ -1,61 +1,79 @@
-import { useState } from 'react'
 import Layout from '../../components/Layout'
+import { PageHeader, StatGrid, ErrorBanner, EmptyState, Loading } from '../../components/ui'
+import { NgoGate } from '../../components/ngo'
+import { useLiveQuery } from '../../lib/live'
+import { listNgoSurvivors, JOURNEY, journeyStage } from '../../lib/careers'
 
 export default function ProgressTracking() {
-  const [survivors] = useState([
-    { id: 1, name: 'Meena K', stage: 5, milestone: 'Employed' },
-    { id: 2, name: 'Priya S', stage: 3, milestone: 'Interviewing' },
-    { id: 3, name: 'Divya R', stage: 4, milestone: 'Offer Received' },
-  ])
-
-  const stages = ['Registration', 'Profile Complete', 'Job Applications', 'Interviews', 'Offer', 'Employed']
-
   return (
     <Layout>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          📈 Progress Tracking
-        </h1>
-        <p style={{ fontSize: 14, color: '#6B7280' }}>Monitor survivor employment journey</p>
-      </div>
+      <NgoGate>{() => <Progress />}</NgoGate>
+    </Layout>
+  )
+}
 
-      {survivors.map(survivor => (
-        <div key={survivor.id} className="card" style={{ marginBottom: 16, padding: 16 }}>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#0C1F3F', marginBottom: 2 }}>{survivor.name}</div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>Current Stage: {stages[survivor.stage - 1]}</div>
+function Progress() {
+  const { data, loading, error, live } = useLiveQuery(listNgoSurvivors, {
+    tables: ['survivors', 'job_applications', 'interviews'],
+  })
+  const survivors = (data ?? []).map((s) => ({
+    ...s,
+    stage: journeyStage({
+      completion: s.profile_completion, applications: s.applications, interviews: s.interviews, offers: s.offers, hired: s.hired,
+    }),
+  })).sort((a, b) => b.stage - a.stage)
+
+  const atStage = (n) => survivors.filter((s) => s.stage === n).length
+
+  return (
+    <>
+      <PageHeader title="📈 Progress Tracking" subtitle="Each survivor's journey, updated automatically from their applications and interviews" live={live} />
+
+      <StatGrid stats={[
+        { label: 'Getting started', value: atStage(1) + atStage(2), color: '#6B7280', bg: '#F3F4F6' },
+        { label: 'Applying', value: atStage(3), color: '#2563EB', bg: '#EFF6FF' },
+        { label: 'Interviewing', value: atStage(4), color: '#0D9488', bg: '#F0FDFA' },
+        { label: 'Offer received', value: atStage(5), color: '#D97706', bg: '#FFFBEB' },
+        { label: 'Employed', value: atStage(6), color: '#059669', bg: '#F0FDF4' },
+      ]} />
+
+      <ErrorBanner message={error} />
+
+      {loading ? <Loading /> : survivors.length === 0 ? (
+        <EmptyState title="No survivors to track yet" hint="Add survivors under Manage Survivors. Their progress appears here automatically." />
+      ) : survivors.map((s) => (
+        <div key={s.id} className="card" style={{ marginBottom: 16, padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#0C1F3F', marginBottom: 2 }}>{s.full_name || s.anonymous_id}</div>
+              <div style={{ fontSize: 12, color: '#6B7280' }}>Current stage: <strong style={{ color: '#2563EB' }}>{JOURNEY[s.stage - 1]}</strong></div>
+            </div>
+            <div style={{ fontSize: 12, color: '#6B7280', textAlign: 'right' }}>
+              Profile {s.profile_completion}% · {s.applications} application{s.applications === 1 ? '' : 's'} · {s.interviews} interview{s.interviews === 1 ? '' : 's'}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {stages.map((stage, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  background: idx < survivor.stage ? '#059669' : '#E5E7EB',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 12,
-                  fontWeight: 700
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {JOURNEY.map((label, idx) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', flex: idx < JOURNEY.length - 1 ? 1 : 'none' }}>
+                <div title={label} style={{
+                  width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                  background: idx < s.stage ? '#059669' : '#E5E7EB', color: idx < s.stage ? '#fff' : '#9CA3AF',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700,
                 }}>
-                  {idx < survivor.stage ? '✓' : idx + 1}
+                  {idx < s.stage ? '✓' : idx + 1}
                 </div>
-                {idx < stages.length - 1 && (
-                  <div style={{
-                    flex: 1,
-                    height: 2,
-                    background: idx < survivor.stage - 1 ? '#059669' : '#E5E7EB',
-                    margin: '0 4px'
-                  }} />
+                {idx < JOURNEY.length - 1 && (
+                  <div style={{ flex: 1, height: 2, background: idx < s.stage - 1 ? '#059669' : '#E5E7EB', margin: '0 4px' }} />
                 )}
               </div>
             ))}
           </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+            {JOURNEY.map((label) => <span key={label} style={{ fontSize: 10, color: '#9CA3AF', width: 60, textAlign: 'center' }}>{label}</span>)}
+          </div>
         </div>
       ))}
-    </Layout>
+    </>
   )
 }

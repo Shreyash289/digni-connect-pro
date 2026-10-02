@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { ErrorBanner, Loading } from '../../components/ui'
-import { ALL_SKILLS } from '../../data/mockData'
-import { getMySurvivor, saveMySurvivorProfile } from '../../lib/careers'
+import { getMySurvivor, saveMySurvivorProfile, SKILL_SUGGESTIONS as ALL_SKILLS } from '../../lib/careers'
 
 const STEPS = ['Personal Details', 'Skills & Education', 'Work Experience', 'Visibility & Documents']
 const EDUCATION = ['Class 5 Pass', 'Class 8 Pass', 'Class 10 Pass', 'Class 12 Pass', 'Diploma', 'ITI Certificate', 'Graduate', 'Post Graduate']

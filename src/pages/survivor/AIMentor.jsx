@@ -1,31 +1,114 @@
 import { useEffect, useRef, useState } from 'react'
 import Layout from '../../components/Layout'
+import { supabase } from '../../integrations/supabase/client'
 import { askMentor } from '../../lib/gemini'
+import { timeAgo, getMySurvivor, listMyApplications, listMySurvivorInterviews, formatDateTime, statusInfo } from '../../lib/careers'
 
-const QUICK_TOPICS = ['Interview Tips', 'Resume Help', 'Build Confidence', 'Skill Development', 'Job Search']
+// Career-relevant facts only — no phone, email, documents or caseworker notes
+async function loadMentorProfile() {
+  try {
+    const [s, apps, interviews] = await Promise.all([getMySurvivor(), listMyApplications(), listMySurvivorInterviews()])
+    return {
+      firstName: (s.full_name || '').trim().split(' ')[0] || undefined,
+      city: s.city, state: s.state,
+      skills: s.skills, preferredRoles: s.preferred_roles, languages: s.languages,
+      education: s.education_level, experience: s.total_experience,
+      profileCompletion: s.profile_completion, visibleToRecruiters: s.consent_share_with_recruiters,
+      applications: apps.slice(0, 8).map((a) => `${a.job_title} at ${a.company_name} (${statusInfo(a.status).label})`),
+      upcomingInterviews: interviews
+        .filter((i) => i.status === 'scheduled' && new Date(i.scheduled_at) >= new Date())
+        .map((i) => `${i.job_title || 'Interview'} with ${i.company_name} on ${formatDateTime(i.scheduled_at)}`),
+    }
+  } catch {
+    return undefined // mentor still works without personalisation
+  }
+}
+
+const QUICK_TOPICS = [
+  { label: 'Interview Tips', prompt: 'Give me practical tips to prepare for my next job interview.' },
+  { label: 'Practice Interview', prompt: "Let's do a mock interview for a job that suits my skills. Ask me one question at a time." },
+  { label: 'Resume Help', prompt: 'Help me write a simple, strong resume based on my skills and experience.' },
+  { label: 'Which jobs suit me?', prompt: 'Based on my skills and profile, which kinds of jobs should I apply for and why?' },
+  { label: 'Build Confidence', prompt: 'I feel nervous about working and talking to employers. How can I build my confidence?' },
+  { label: 'Learn New Skills', prompt: 'What free or low-cost courses in India could help me get a better job?' },
+  { label: 'Improve My Profile', prompt: 'How can I improve my CAREVIA profile so recruiters notice me?' },
+  { label: 'Spot Job Scams', prompt: 'How can I tell if a job offer is a scam?' },
+]
+
+// Greeting shown at the top of every conversation (UI only, never stored)
+const GREETING = {
+  id: 'greeting',
+  type: 'bot',
+  text: "Hi! I'm your CAREVIA AI Mentor. I'm here to help you with career advice, interview prep, and confidence building. What would you like to work on today?",
+}
+
+const toMessage = (row) => ({
+  id: row.id,
+  type: row.role === 'user' ? 'user' : 'bot',
+  text: (row.parts ?? []).map((p) => p?.text ?? '').join(''),
+})
 
 export default function AIMentor() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      type: 'bot',
-      text: "Hi! I'm your CAREVIA AI Mentor. I'm here to help you with career advice, interview prep, and confidence building. What would you like to work on today?",
-    },
-  ])
+  const [threads, setThreads] = useState([])
+  const [threadId, setThreadId] = useState(null)
+  const [messages, setMessages] = useState([GREETING])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const scrollRef = useRef(null)
+  const profileRef = useRef(null)
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, loading])
 
+  useEffect(() => {
+    profileRef.current = loadMentorProfile()
+  }, [])
+
+  // Load saved conversations and reopen the most recent one
+  useEffect(() => {
+    supabase
+      .from('mentor_threads')
+      .select('id, title, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(20)
+      .then(({ data, error: err }) => {
+        if (err) return setError(err.message)
+        setThreads(data ?? [])
+        if (data?.[0]) openThread(data[0].id)
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function openThread(id) {
+    setThreadId(id)
+    setError('')
+    const { data, error: err } = await supabase
+      .from('mentor_messages')
+      .select('id, role, parts, created_at')
+      .eq('thread_id', id)
+      .order('created_at', { ascending: true })
+    if (err) return setError(err.message)
+    setMessages([GREETING, ...(data ?? []).map(toMessage)])
+  }
+
+  function newConversation() {
+    setThreadId(null)
+    setMessages([GREETING])
+    setError('')
+  }
+
+  async function saveMessage(tid, role, text) {
+    const { error: err } = await supabase.from('mentor_messages').insert({ thread_id: tid, role, parts: [{ type: 'text', text }] })
+    if (err) throw err
+  }
+
   const sendMessage = async (overrideText) => {
     const text = (overrideText ?? input).trim()
     if (!text || loading) return
 
-    const userMessage = { id: Date.now(), type: 'user', text }
+    const userMessage = { id: `local-${Date.now()}`, type: 'user', text }
     const nextMessages = [...messages, userMessage]
     setMessages(nextMessages)
     setInput('')
@@ -33,8 +116,29 @@ export default function AIMentor() {
     setLoading(true)
 
     try {
-      const reply = await askMentor(nextMessages)
-      setMessages((prev) => [...prev, { id: Date.now() + 1, type: 'bot', text: reply }])
+      let tid = threadId
+      if (!tid) {
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data: thread, error: err } = await supabase
+          .from('mentor_threads')
+          .insert({ user_id: user.id, title: text.slice(0, 60) })
+          .select('id, title, updated_at')
+          .single()
+        if (err) throw err
+        tid = thread.id
+        setThreadId(tid)
+        setThreads((t) => [thread, ...t])
+      }
+      await saveMessage(tid, 'user', text)
+
+      // The greeting is UI-only, so it isn't sent to the model
+      const reply = await askMentor(nextMessages.filter((m) => m.id !== 'greeting'), await profileRef.current)
+      setMessages((prev) => [...prev, { id: `local-${Date.now() + 1}`, type: 'bot', text: reply }])
+      await saveMessage(tid, 'assistant', reply)
+
+      const now = new Date().toISOString()
+      await supabase.from('mentor_threads').update({ updated_at: now }).eq('id', tid)
+      setThreads((t) => [{ ...(t.find((x) => x.id === tid) ?? { id: tid, title: text.slice(0, 60) }), updated_at: now }, ...t.filter((x) => x.id !== tid)])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong reaching the AI Mentor.')
     } finally {
@@ -44,11 +148,29 @@ export default function AIMentor() {
 
   return (
     <Layout>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          🤖 AI Mentor
-        </h1>
-        <p style={{ fontSize: 14, color: '#6B7280' }}>Get personalized career guidance and interview prep, powered by Gemini</p>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
+            🤖 AI Mentor
+          </h1>
+          <p style={{ fontSize: 14, color: '#6B7280' }}>Get personalized career guidance and interview prep, powered by Gemini. Your conversations are saved privately.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {threads.length > 0 && (
+            <select
+              value={threadId ?? ''}
+              onChange={(e) => (e.target.value ? openThread(e.target.value) : newConversation())}
+              style={{ padding: '8px 10px', borderRadius: 6, border: '0.5px solid #D1D5DB', fontSize: 12, maxWidth: 260 }}
+            >
+              <option value="">— New conversation —</option>
+              {threads.map((t) => <option key={t.id} value={t.id}>{t.title} · {timeAgo(t.updated_at)}</option>)}
+            </select>
+          )}
+          <button onClick={newConversation} disabled={loading}
+            style={{ padding: '8px 14px', borderRadius: 6, background: '#EFF6FF', color: '#2563EB', border: '0.5px solid #BFDBFE', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            + New chat
+          </button>
+        </div>
       </div>
 
       {/* Chat Container */}
@@ -179,8 +301,8 @@ export default function AIMentor() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
           {QUICK_TOPICS.map((topic) => (
             <button
-              key={topic}
-              onClick={() => sendMessage(topic)}
+              key={topic.label}
+              onClick={() => sendMessage(topic.prompt)}
               disabled={loading}
               style={{
                 padding: '10px 12px',
@@ -193,7 +315,7 @@ export default function AIMentor() {
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
-              {topic}
+              {topic.label}
             </button>
           ))}
         </div>
