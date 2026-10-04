@@ -1,52 +1,84 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import { resumeService } from '../../services/resumeService'
+import { supabase } from '../../integrations/supabase/client'
 
 export default function DocumentsVault() {
+  const navigate = useNavigate()
+  const userId = localStorage.getItem('userId')
+  const userEmail = localStorage.getItem('email') || ''
+  const isDemoUser = !userId || userEmail.includes('demo')
+
+  // Existing documents state
   const [documents, setDocuments] = useState([
     {
       id: 'doc-1',
-      name: 'Aadhaar_Card.pdf',
-      type: 'ID Proof',
+      name: 'Aadhaar_Card_Verification.pdf',
+      type: 'Government ID',
       uploadDate: '2025-06-01',
       size: '2.4 MB',
-      verified: true,
-      icon: '🆔'
+      verified: true
     },
     {
       id: 'doc-2',
-      name: 'Education_Certificate.pdf',
-      type: 'Education',
+      name: 'Class10_Certificate.pdf',
+      type: 'Education Proof',
       uploadDate: '2025-06-02',
       size: '1.8 MB',
-      verified: true,
-      icon: '🎓'
+      verified: true
     },
     {
       id: 'doc-3',
-      name: 'BGV_Report.pdf',
-      type: 'Background Verification',
+      name: 'NGO_Verification_Letter.pdf',
+      type: 'Support Verification',
       uploadDate: '2025-06-05',
       size: '3.1 MB',
-      verified: false,
-      icon: '✅'
+      verified: false
     },
     {
       id: 'doc-4',
-      name: 'Resume.pdf',
+      name: 'Resume_Meena_Rajeshwari.pdf',
       type: 'Resume',
       uploadDate: '2025-06-10',
       size: '1.2 MB',
-      verified: true,
-      icon: '📄'
+      verified: true
     }
   ])
 
   const [dragActive, setDragActive] = useState(false)
 
+  // Resume section state
+  const [uploadedResumes, setUploadedResumes] = useState([])
+  const [loadingResumes, setLoadingResumes] = useState(false)
+  const [uploadingResume, setUploadingResume] = useState(false)
+  const [resumeNotice, setResumeNotice] = useState(null)
+  const [selectedFile, setSelectedFile] = useState(null)
+
+  useEffect(() => {
+    if (userId && !isDemoUser) {
+      fetchResumes(userId)
+    }
+  }, [userId, isDemoUser])
+
+  const fetchResumes = async (uid) => {
+    setLoadingResumes(true)
+    const { data, error, unavailable } = await resumeService.listResumes(uid)
+    if (unavailable) {
+      console.warn('Resume table unavailable')
+    } else if (error) {
+      console.warn('Error fetching resumes:', error)
+    } else if (data) {
+      setUploadedResumes(data)
+    }
+    setLoadingResumes(false)
+  }
+
+  // Existing document handlers
   const deleteDocument = (docId) => {
-    if (window.confirm('Delete this document?')) {
-      setDocuments(documents.filter(doc => doc.id !== docId))
-      alert('Document deleted')
+    if (window.confirm('Are you sure you want to remove this document?')) {
+      setDocuments(documents.filter((doc) => doc.id !== docId))
+      alert('Document removed')
     }
   }
 
@@ -64,190 +96,456 @@ export default function DocumentsVault() {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    
-    // Mock: just show alert
-    alert('✅ File uploaded! (Mock)')
-    
-    // In real app: process file here
+    alert('File upload received (demo)')
   }
 
-  const groupedDocs = {
-    'ID Proof': documents.filter(d => d.type === 'ID Proof'),
-    'Education': documents.filter(d => d.type === 'Education'),
-    'Background Verification': documents.filter(d => d.type === 'Background Verification'),
-    'Resume': documents.filter(d => d.type === 'Resume'),
+  // Resume File Selection & Validation
+  const handleResumeFileSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setResumeNotice(null)
+    const validExtensions = ['.pdf', '.doc', '.docx']
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
+
+    if (!validExtensions.includes(fileExt)) {
+      setResumeNotice({
+        type: 'error',
+        text: 'Invalid file format. Please upload a PDF, DOC, or DOCX file.'
+      })
+      setSelectedFile(null)
+      return
+    }
+
+    // 10MB file size limit
+    if (file.size > 10 * 1024 * 1024) {
+      setResumeNotice({
+        type: 'error',
+        text: 'File size exceeds limit (10 MB maximum).'
+      })
+      setSelectedFile(null)
+      return
+    }
+
+    setSelectedFile(file)
   }
+
+  // Resume Upload Handler
+  const handleUploadResume = async () => {
+    if (!selectedFile) return
+
+    if (isDemoUser) {
+      setResumeNotice({
+        type: 'info',
+        text: 'Sign in with your account to save files online. You can also build your resume with the online builder.'
+      })
+      return
+    }
+
+    setUploadingResume(true)
+    setResumeNotice(null)
+
+    const path = `${userId}/${Date.now()}_${selectedFile.name}`
+    const { data: uploadData, error: uploadErr, unavailable: uploadUnavailable } =
+      await resumeService.uploadResumeDocument(selectedFile, path)
+
+    if (uploadUnavailable) {
+      setResumeNotice({
+        type: 'warning',
+        text: 'Storage service for resume uploads is currently unavailable on the backend.'
+      })
+      setUploadingResume(false)
+      return
+    }
+
+    if (uploadErr) {
+      setResumeNotice({
+        type: 'error',
+        text: `Upload failed: ${uploadErr}`
+      })
+      setUploadingResume(false)
+      return
+    }
+
+    // Record header in database if supported
+    await resumeService.saveResume({
+      survivor_id: userId,
+      title: selectedFile.name,
+      file_path: uploadData?.path || path,
+      updated_at: new Date().toISOString()
+    })
+
+    setResumeNotice({
+      type: 'success',
+      text: 'Resume successfully uploaded!'
+    })
+    setSelectedFile(null)
+    setUploadingResume(false)
+
+    // Refresh resume list
+    fetchResumes(userId)
+  }
+
+  const getResumeUrl = (filePath) => {
+    if (!filePath) return null
+    try {
+      const { data } = supabase.storage.from('resumes').getPublicUrl(filePath)
+      return data?.publicUrl || null
+    } catch {
+      return null
+    }
+  }
+
+  const statItems = [
+    { label: 'Total files in vault', value: documents.length },
+    { label: 'Verified by partner', value: documents.filter((d) => d.verified).length },
+    { label: 'Pending review', value: documents.filter((d) => !d.verified).length }
+  ]
 
   return (
     <Layout>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          📂 Document Vault
-        </h1>
-        <p style={{ fontSize: 14, color: '#6B7280' }}>Upload and manage your documents securely</p>
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>Documents vault</h2>
+        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+          Encrypted, role-verified storage for identity proofs, credentials, and resumes
+        </p>
       </div>
 
-      {/* Upload Section */}
-      <div 
+      {/* Stats */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 16,
+          marginBottom: 28
+        }}
+      >
+        {statItems.map((stat, idx) => {
+          const cardClass = idx === 0 ? 'card-light' : idx % 2 === 1 ? 'card-dark' : 'card'
+          return (
+            <div key={stat.label} className={cardClass} style={{ padding: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.85, marginBottom: 12 }}>
+                {stat.label}
+              </div>
+              <div style={{ fontSize: 40, fontWeight: 300, lineHeight: 1 }}>{stat.value}</div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Dedicated Resume Management Section */}
+      <div className="card" style={{ padding: 28, marginBottom: 28, borderLeft: '4px solid var(--navy)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+          <div>
+            <h3 style={{ color: 'var(--navy)', margin: '0 0 4px 0', fontSize: 18 }}>
+              Resumes & CVs
+            </h3>
+            <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+              Manage your career documents, upload existing PDFs, or build a professional resume online.
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate('/survivor/resume')}
+            className="btn-primary"
+            style={{ padding: '9px 18px', display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Create or Edit Resume
+          </button>
+        </div>
+
+        {/* Upload Resume Form */}
+        <div
+          style={{
+            background: 'var(--mist)',
+            borderRadius: 'var(--r-card)',
+            padding: 20,
+            marginBottom: 20
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)', marginBottom: 8 }}>
+            Upload Resume File
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 14 }}>
+            Supported formats: PDF, DOC, DOCX (up to 10 MB)
+          </p>
+
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleResumeFileSelect}
+              style={{ display: 'none' }}
+              id="resume-file-input"
+            />
+            <label
+              htmlFor="resume-file-input"
+              className="btn-soft"
+              style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Choose File
+            </label>
+
+            <span style={{ fontSize: 13, color: selectedFile ? 'var(--navy)' : 'var(--ink2)', fontWeight: selectedFile ? 500 : 400 }}>
+              {selectedFile ? selectedFile.name : 'No file selected'}
+            </span>
+
+            {selectedFile && (
+              <button
+                onClick={handleUploadResume}
+                disabled={uploadingResume}
+                className="btn-pill"
+                style={{ padding: '8px 18px', fontSize: 13 }}
+              >
+                {uploadingResume ? 'Uploading...' : 'Upload Resume'}
+              </button>
+            )}
+          </div>
+
+          {/* Resume Upload Banners */}
+          {resumeNotice && (
+            <div
+              style={{
+                marginTop: 14,
+                padding: '10px 14px',
+                borderRadius: 'var(--r-subtle)',
+                fontSize: 13,
+                background:
+                  resumeNotice.type === 'error'
+                    ? '#fff5f5'
+                    : resumeNotice.type === 'success'
+                    ? '#f0fff4'
+                    : resumeNotice.type === 'warning'
+                    ? '#fffaf0'
+                    : '#edf2f7',
+                color:
+                  resumeNotice.type === 'error'
+                    ? '#c53030'
+                    : resumeNotice.type === 'success'
+                    ? '#276749'
+                    : resumeNotice.type === 'warning'
+                    ? '#9c4221'
+                    : 'var(--navy)'
+              }}
+            >
+              {resumeNotice.text}
+            </div>
+          )}
+        </div>
+
+        {/* Uploaded Resumes List */}
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)', marginBottom: 12 }}>
+            Uploaded Resumes
+          </div>
+
+          {loadingResumes ? (
+            <div style={{ fontSize: 13, color: 'var(--ink2)', padding: 12 }}>
+              Loading resumes...
+            </div>
+          ) : uploadedResumes.length === 0 ? (
+            <div
+              style={{
+                padding: '24px 16px',
+                textAlign: 'center',
+                border: '1px dashed var(--line)',
+                borderRadius: 'var(--r-card)',
+                background: '#ffffff'
+              }}
+            >
+              <p style={{ color: 'var(--ink2)', fontSize: 14, margin: '0 0 12px 0' }}>
+                No resumes uploaded yet.
+              </p>
+              <Link
+                to="/survivor/resume"
+                className="btn-soft"
+                style={{ textDecoration: 'none', display: 'inline-flex', padding: '8px 16px', fontSize: 13 }}
+              >
+                Build your resume
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {uploadedResumes.map((res, index) => {
+                const isLatest = index === 0
+                const fileUrl = getResumeUrl(res.file_path)
+
+                return (
+                  <div
+                    key={res.id || index}
+                    style={{
+                      padding: '14px 18px',
+                      borderRadius: 'var(--r-card)',
+                      border: '1px solid var(--line)',
+                      background: isLatest ? 'var(--mist)' : '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 12
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)' }}>
+                          {res.title || res.file_path || 'Uploaded Resume'}
+                        </span>
+                        {isLatest && (
+                          <span
+                            className="badge"
+                            style={{ background: 'var(--navy)', color: '#ffffff', fontSize: 11 }}
+                          >
+                            Latest Resume
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
+                        Uploaded {res.created_at ? new Date(res.created_at).toLocaleDateString() : 'Recently'}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {fileUrl ? (
+                        <a
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-soft"
+                          style={{ textDecoration: 'none', fontSize: 12, padding: '6px 12px' }}
+                        >
+                          View / Download
+                        </a>
+                      ) : (
+                        <button
+                          disabled
+                          className="btn-soft"
+                          style={{ fontSize: 12, padding: '6px 12px', opacity: 0.6, cursor: 'not-allowed' }}
+                          title="File URL unavailable"
+                        >
+                          View
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Drag & drop upload area for identity & general docs */}
+      <div
         className="card"
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
         style={{
-          padding: 40,
+          padding: 36,
           textAlign: 'center',
-          border: dragActive ? '2px dashed #2563EB' : '2px dashed #E5E7EB',
-          background: dragActive ? '#EFF6FF' : '#F9FAFB',
+          border: dragActive ? '2px dashed var(--royal)' : '1px dashed var(--line)',
+          background: dragActive ? 'var(--mist)' : 'var(--card)',
           cursor: 'pointer',
-          transition: 'all 0.3s',
-          marginBottom: 24
+          marginBottom: 28
         }}
       >
-        <div style={{ fontSize: 40, marginBottom: 12 }}>📤</div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          Drag & drop your documents here
-        </div>
-        <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 16 }}>
-          or click to browse (PDF, JPG, PNG - Max 5MB)
-        </div>
-        <button style={{
-          padding: '10px 20px',
-          background: '#2563EB',
-          color: '#fff',
-          border: 'none',
-          borderRadius: 8,
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer'
-        }}>
-          Browse Files
+        <h3 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+          Upload new verification document
+        </h3>
+        <p style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 18 }}>
+          Drag and drop files here or click to browse (PDF, PNG, JPG up to 5MB)
+        </p>
+        <button className="btn-pill" onClick={() => alert('Browse files demo triggered')}>
+          Browse files
         </button>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        <div style={{ padding: 16, background: '#F0FDF4', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#059669', fontFamily: 'Plus Jakarta Sans' }}>
-            {documents.length}
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>Total Documents</div>
+      {/* Stored Documents List */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div
+          style={{
+            padding: '20px 24px',
+            borderBottom: '1px solid var(--line)',
+            display: 'flex',
+            justify: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <h3 style={{ color: 'var(--navy)', margin: 0 }}>Stored documents</h3>
+          <span className="badge">{documents.length} files</span>
         </div>
-        <div style={{ padding: 16, background: '#EFF6FF', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#2563EB', fontFamily: 'Plus Jakarta Sans' }}>
-            {documents.filter(d => d.verified).length}
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>Verified</div>
-        </div>
-        <div style={{ padding: 16, background: '#FEF3C7', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#D97706', fontFamily: 'Plus Jakarta Sans' }}>
-            {documents.filter(d => !d.verified).length}
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>Pending Review</div>
-        </div>
-      </div>
 
-      {/* Documents by Category */}
-      {Object.entries(groupedDocs).map(([category, docs]) => (
-        docs.length > 0 && (
-          <div key={category} className="card" style={{ marginBottom: 20, padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '0.5px solid #E5E7EB', background: '#F9FAFB' }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', margin: 0 }}>
-                {docs[0].icon} {category}
-              </h3>
-            </div>
-
-            <div>
-              {docs.map(doc => (
-                <div key={doc.id} style={{ padding: '16px 20px', borderBottom: '0.5px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                    <div style={{ fontSize: 24 }}>{doc.icon}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0C1F3F', marginBottom: 2 }}>
-                        {doc.name}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#6B7280' }}>
-                        {doc.size} • Uploaded {doc.uploadDate}
-                      </div>
-                    </div>
+        {documents.length === 0 ? (
+          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--navy)', marginBottom: 8 }}>No documents uploaded</h3>
+            <p style={{ color: 'var(--ink2)', fontSize: 14, marginBottom: 20 }}>
+              Upload your identification documents to proceed with profile verification.
+            </p>
+            <button className="btn-pill" onClick={() => alert('Browse files demo triggered')}>
+              Upload document
+            </button>
+          </div>
+        ) : (
+          <div>
+            {documents.map((doc) => (
+              <div
+                key={doc.id}
+                style={{
+                  padding: '18px 24px',
+                  borderBottom: '1px solid var(--line)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 500,
+                      color: 'var(--navy)',
+                      marginBottom: 2
+                    }}
+                  >
+                    {doc.name}
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {doc.verified && (
-                      <div style={{
-                        padding: '4px 10px',
-                        background: '#D1FAE5',
-                        color: '#059669',
-                        borderRadius: 6,
-                        fontSize: 10,
-                        fontWeight: 600
-                      }}>
-                        ✓ Verified
-                      </div>
-                    )}
-                    {!doc.verified && (
-                      <div style={{
-                        padding: '4px 10px',
-                        background: '#FEF3C7',
-                        color: '#D97706',
-                        borderRadius: 6,
-                        fontSize: 10,
-                        fontWeight: 600
-                      }}>
-                        ⏳ Pending
-                      </div>
-                    )}
-                    <button style={{
-                      padding: '6px 12px',
-                      background: '#F3F4F6',
-                      color: '#6B7280',
-                      border: '0.5px solid #E5E7EB',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}>
-                      Download
-                    </button>
-                    <button 
-                      onClick={() => deleteDocument(doc.id)}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#FEE2E2',
-                        color: '#DC2626',
-                        border: '0.5px solid #FECACA',
-                        borderRadius: 6,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Delete
-                    </button>
+                  <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
+                    {doc.type} · {doc.size} · Uploaded on {doc.uploadDate}
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span
+                    className="badge"
+                    style={{
+                      background: doc.verified ? 'var(--navy)' : 'var(--mist)',
+                      color: doc.verified ? '#ffffff' : 'var(--navy)'
+                    }}
+                  >
+                    {doc.verified ? 'Verified' : 'Pending review'}
+                  </span>
+                  <button className="btn-soft" onClick={() => alert(`Downloading ${doc.name}`)}>
+                    Download
+                  </button>
+                  <button className="btn-soft" onClick={() => deleteDocument(doc.id)}>
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        )
-      ))}
-
-      {/* Empty State */}
-      {documents.length === 0 && (
-        <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color: '#9CA3AF' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>No documents uploaded yet</div>
-          <div style={{ fontSize: 12 }}>Upload your documents to share with employers</div>
-        </div>
-      )}
-
-      {/* Security Notice */}
-      <div style={{ marginTop: 24, padding: 16, background: '#EFF6FF', border: '0.5px solid #BFDBFE', borderRadius: 8 }}>
-        <div style={{ fontSize: 12, color: '#1E40AF', fontWeight: 500 }}>
-          🔒 <strong>Encrypted & Secure</strong>
-        </div>
-        <div style={{ fontSize: 11, color: '#1E40AF', marginTop: 4 }}>
-          Your documents are encrypted and only visible to you and approved employers. They are never shared without your permission.
-        </div>
+        )}
       </div>
     </Layout>
   )

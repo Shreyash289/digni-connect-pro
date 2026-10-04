@@ -10,6 +10,9 @@ import DocumentsVault from './pages/survivor/DocumentsVault'
 import MyApplications from './pages/survivor/MyApplications'
 import AIMentor from './pages/survivor/AIMentor'
 import JobBoard from './pages/survivor/JobBoard'
+import SurvivorResume from './pages/survivor/SurvivorResume'
+import SurvivorSkills from './pages/survivor/SurvivorSkills'
+import SurvivorCourses from './pages/survivor/SurvivorCourses'
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard'
 import SavedCandidates from './pages/recruiter/SavedCandidates'
 import MyInterviews from './pages/recruiter/MyInterviews'
@@ -22,10 +25,12 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import UserManagement from './pages/admin/UserManagement'
 import AuditLogs from './pages/admin/AuditLogs'
 import Analytics from './pages/admin/Analytics'
+import LaunchScreen from './components/ui/LaunchScreen'
 
 export default function App() {
   return (
     <BrowserRouter>
+      <LaunchScreen />
       <Routes>
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<Login />} />
@@ -40,6 +45,9 @@ export default function App() {
         <Route path="/survivor/docs" element={<DocumentsVault />} />
         <Route path="/survivor/ai" element={<AIMentor />} />
         <Route path="/survivor/jobs" element={<JobBoard />} />
+        <Route path="/survivor/resume" element={<SurvivorResume />} />
+        <Route path="/survivor/skills" element={<SurvivorSkills />} />
+        <Route path="/survivor/courses" element={<SurvivorCourses />} />
         
         {/* RECRUITER ROUTES */}
         <Route path="/recruiter" element={<RecruiterDashboard />} />

@@ -1,0 +1,42 @@
+:root{
+  --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --bg:#F3F6FC; --card:#FFFFFF; --ink:#0B1B3F; --ink2:#4A5878;
+  --navy:#0F2250; --royal:#2F5BEA; --sky:#BFD0FA; --mist:#E3EBFB; --line:#DCE4F5;
+  --r-card:28px; --r-hero:32px; --r-pill:999px; --r-input:16px;
+  --grad-hero:linear-gradient(180deg,#EEF3FF 0%,#C9D8FB 52%,#7E9BEA 100%);
+  --grad-card:linear-gradient(135deg,#DDE7FD,#AFC4F7);
+  --grad-logo:linear-gradient(145deg,#4F7CFF,#0F2250);
+}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--font);
+  font-weight:400;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2{font-weight:300;letter-spacing:-1.2px;line-height:1.08}
+h1{font-size:clamp(40px,7vw,64px);letter-spacing:-1.8px}
+h2{font-size:clamp(32px,5vw,48px)}
+h3{font-weight:400;font-size:22px;letter-spacing:-.3px}
+button,input,select,textarea{font-family:var(--font)}
+
+/* Buttons */
+.btn-pill{border:0;background:var(--navy);color:#fff;font:500 13px var(--font);
+  padding:11px 22px;border-radius:var(--r-pill);cursor:pointer;
+  transition:transform .2s,background .2s}
+.btn-pill:hover{transform:translateY(-1px);background:var(--royal)}
+.btn-soft{background:var(--mist);color:var(--ink);border:0;border-radius:var(--r-pill);
+  padding:8px 16px;font:500 13px var(--font);cursor:pointer}
+:focus-visible{outline:2px solid var(--royal);outline-offset:3px}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:28px}
+.card-light{background:var(--grad-card);color:var(--navy);border:0;border-radius:var(--r-card);padding:28px}
+.card-dark{background:var(--navy);color:#fff;border:0;border-radius:var(--r-card);padding:28px}
+.card-dark p{color:#B8C6EA}
+
+/* Inputs */
+.input{width:100%;padding:14px 18px;border:1px solid var(--line);
+  border-radius:var(--r-input);background:#fff;font-size:14px;color:var(--ink)}
+.input:focus{border-color:var(--royal);box-shadow:0 0 0 3px rgba(47,91,234,.12);outline:none}
+
+/* Badges */
+.badge{display:inline-block;padding:4px 12px;border-radius:var(--r-pill);
+  background:var(--mist);color:var(--navy);font-size:12px;font-weight:500}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

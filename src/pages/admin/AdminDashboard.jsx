@@ -18,142 +18,182 @@ export default function AdminDashboard() {
     setApprovals(approvals.filter(s => s.id !== id))
   }
 
+  const statItems = [
+    { label: 'Total verified survivors', value: ANALYTICS.totalSurvivors },
+    { label: 'Placed in careers', value: ANALYTICS.placedSurvivors },
+    { label: 'Active partner NGOs', value: ANALYTICS.activeNGOs },
+    { label: 'Registered employers', value: ANALYTICS.activeRecruiters },
+    { label: 'Pending review', value: approvals.length }
+  ]
+
   return (
     <Layout>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>Admin Command Center</h1>
-        <p style={{ fontSize: 14, color: '#6B7280' }}>Platform oversight, approvals, and analytics dashboard</p>
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+          Platform command center
+        </h2>
+        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+          System-wide governance, partner approvals, and workforce placement analytics
+        </p>
       </div>
 
-      {/* Key metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Total Survivors', value: ANALYTICS.totalSurvivors, color: '#2563EB', bg: '#EFF6FF', icon: '👥' },
-          { label: 'Placed', value: ANALYTICS.placedSurvivors, color: '#059669', bg: '#F0FDF4', icon: '✅' },
-          { label: 'Active NGOs', value: ANALYTICS.activeNGOs, color: '#7C3AED', bg: '#F5F3FF', icon: '🤝' },
-          { label: 'Recruiters', value: ANALYTICS.activeRecruiters, color: '#D97706', bg: '#FFFBEB', icon: '🔎' },
-          { label: 'Pending', value: ANALYTICS.pendingApprovals, color: '#DC2626', bg: '#FEF2F2', icon: '⏳' },
-        ].map(m => (
-          <div key={m.label} className="stat-card" style={{ background: m.bg, border: 'none', textAlign: 'center' }}>
-            <div style={{ fontSize: 22, marginBottom: 6 }}>{m.icon}</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: m.color, fontFamily: 'Plus Jakarta Sans', marginBottom: 2 }}>{m.value}</div>
-            <div style={{ fontSize: 11, color: '#6B7280' }}>{m.label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
-        {/* Pending approvals */}
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '0.5px solid #E5E7EB', background: '#FFFBEB' }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', margin: 0 }}>
-              ⏳ Pending Approvals ({approvals.length})
-            </h3>
-            <p style={{ fontSize: 12, color: '#6B7280', margin: '4px 0 0' }}>Review and approve new survivor profiles</p>
-          </div>
-
-          {approvals.length === 0
-            ? <div style={{ padding: '40px 20px', textAlign: 'center', color: '#9CA3AF' }}>
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>✅ All caught up!</div>
-                <div style={{ fontSize: 12 }}>No pending approvals. All profiles reviewed.</div>
+      {/* Stat Tiles */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+        {statItems.map((m, idx) => {
+          const cardClass = idx === 0 ? 'card-light' : 'card-dark'
+          return (
+            <div key={m.label} className={cardClass} style={{ padding: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.85, marginBottom: 12 }}>
+                {m.label}
               </div>
-            : <table className="table">
-                <thead>
-                  <tr>
-                    <th>Name</th><th>NGO</th><th>Completeness</th><th>Status</th><th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {approvals.map(s => (
-                    <tr key={s.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 6, background: `${s.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: s.color }}>{s.initials}</div>
-                          <span style={{ fontWeight: 600 }}>{s.name.split(' ')[0]}</span>
-                        </div>
-                      </td>
-                      <td><span style={{ fontSize: 12, color: '#6B7280' }}>{s.ngo}</span></td>
-                      <td><span style={{ fontSize: 12, fontWeight: 600, color: '#2563EB' }}>{s.completeness}%</span></td>
-                      <td><span className="badge badge-pending">Pending</span></td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <button className="btn-success" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => approve(s.id)}>Approve</button>
-                          <button className="btn-danger" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => reject(s.id)}>Reject</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-          }
+              <div style={{ fontSize: 40, fontWeight: 300, lineHeight: 1 }}>
+                {m.value}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, marginBottom: 24 }}>
+        {/* Pending approvals queue */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ color: 'var(--navy)', margin: 0 }}>
+                Pending candidate approvals
+              </h3>
+              <p style={{ fontSize: 12, color: 'var(--ink2)', margin: '4px 0 0' }}>
+                Review and approve candidate submissions
+              </p>
+            </div>
+            <span className="badge">
+              {approvals.length} pending
+            </span>
+          </div>
+
+          {approvals.length === 0 ? (
+            <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+              <h3 style={{ color: 'var(--navy)', marginBottom: 8 }}>All submissions reviewed</h3>
+              <p style={{ color: 'var(--ink2)', fontSize: 13, margin: 0 }}>
+                There are no pending approvals in the review queue.
+              </p>
+            </div>
+          ) : (
+            <div>
+              {approvals.map(s => (
+                <div
+                  key={s.id}
+                  style={{
+                    padding: '18px 24px',
+                    borderBottom: '1px solid var(--line)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 16,
+                    flexWrap: 'wrap'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--navy)', marginBottom: 2 }}>
+                      {s.name}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
+                      Partner: {s.ngo} · Completeness: {s.completeness}%
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button
+                      className="btn-pill"
+                      style={{ padding: '8px 16px', fontSize: 12 }}
+                      onClick={() => approve(s.id)}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="btn-soft"
+                      onClick={() => reject(s.id)}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Stats column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Placement rate */}
-          <div className="card" style={{ padding: 20 }}>
-            <h4 style={{ fontSize: 14, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 14 }}>Placement Rate</h4>
-            <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto 16px' }}>
-              <svg width="100" height="100" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="10" />
-                <circle cx="50" cy="50" r="40" fill="none" stroke="#059669" strokeWidth="10" strokeDasharray={`${2 * Math.PI * 40 * 0.60} ${2 * Math.PI * 40 * 0.40}`} strokeDashoffset={2 * Math.PI * 40 * 0.25} strokeLinecap="round" />
-              </svg>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#059669', fontFamily: 'Plus Jakarta Sans' }}>60%</div>
-                <div style={{ fontSize: 10, color: '#6B7280' }}>Placed</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-              <span style={{ color: '#6B7280' }}>{ANALYTICS.placedSurvivors} of {ANALYTICS.totalSurvivors}</span>
-              <span style={{ color: '#059669', fontWeight: 600 }}>↑ 8% YoY</span>
-            </div>
+        {/* NGO partner overview */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ color: 'var(--navy)', margin: 0 }}>
+              NGO partner organizations
+            </h3>
+            <span className="badge">
+              {NGOS.length} registered
+            </span>
           </div>
 
-          {/* NGO partners */}
-          <div className="card" style={{ padding: 20 }}>
-            <h4 style={{ fontSize: 14, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 12 }}>NGO Partners</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {NGOS.slice(0, 4).map(ngo => (
-              <div key={ngo.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', fontSize: 12, borderBottom: '0.5px solid #F3F4F6' }}>
+              <div
+                key={ngo.id}
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: 'var(--r-input)',
+                  background: 'var(--bg)',
+                  border: '1px solid var(--line)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
                 <div>
-                  <div style={{ fontWeight: 600, color: '#0C1F3F' }}>{ngo.name}</div>
-                  <div style={{ fontSize: 11, color: '#6B7280' }}>{ngo.survivors} survivors</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--navy)' }}>
+                    {ngo.name}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
+                    {ngo.survivors} registered candidates
+                  </div>
                 </div>
-                <span style={{ color: '#059669', fontWeight: 600 }}>{ngo.placed} placed</span>
+                <span className="badge" style={{ background: 'var(--mist)', color: 'var(--navy)' }}>
+                  {ngo.placed} placed
+                </span>
               </div>
             ))}
           </div>
+
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+              <span style={{ color: 'var(--ink2)' }}>Aggregate placement rate</span>
+              <span style={{ fontWeight: 500, color: 'var(--navy)' }}>60%</span>
+            </div>
+            <div style={{ height: 6, background: 'var(--mist)', borderRadius: 'var(--r-pill)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: '60%', background: 'var(--royal)', borderRadius: 'var(--r-pill)' }} />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Skill distribution */}
-      <div className="card" style={{ padding: 20, marginBottom: 20 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 16 }}>Top Skills in Demand</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+      {/* Top skills distribution card */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h3 style={{ color: 'var(--navy)', marginBottom: 16 }}>
+          Workforce demand distribution
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
           {ANALYTICS.skillDistribution.map(s => (
             <div key={s.skill}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#0C1F3F' }}>{s.skill}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#2563EB' }}>{s.count}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+                <span style={{ fontWeight: 500, color: 'var(--navy)' }}>{s.skill}</span>
+                <span style={{ color: 'var(--ink2)' }}>{s.count} candidates</span>
               </div>
-              <div className="progress-track">
-                <div className="progress-fill" style={{ width: `${(s.count / 32) * 100}%` }} />
+              <div style={{ height: 6, background: 'var(--mist)', borderRadius: 'var(--r-pill)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${(s.count / 32) * 100}%`, background: 'var(--royal)', borderRadius: 'var(--r-pill)' }} />
               </div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Approved list */}
-      {approved.length > 0 && (
-        <div className="card" style={{ padding: 20, background: '#F0FDF4', border: '0.5px solid #BBF7D0' }}>
-          <h4 style={{ fontSize: 14, fontWeight: 700, color: '#166534', fontFamily: 'Plus Jakarta Sans', marginBottom: 10 }}>
-            ✅ Approved Today ({approved.length})
-          </h4>
-          <p style={{ fontSize: 12, color: '#059669', margin: 0 }}>
-            {SURVIVORS.filter(s => approved.includes(s.id)).map(s => s.name).join(', ')}
-          </p>
-        </div>
-      )}
     </Layout>
   )
 }

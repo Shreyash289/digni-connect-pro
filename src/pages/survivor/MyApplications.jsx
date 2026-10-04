@@ -1,197 +1,149 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import { SURVIVORS, JOBS } from '../../data/mockData'
 
 export default function MyApplications() {
-  // Get current survivor (from URL or localStorage)
-  const survivorId = 'survivor-1' // Mock - will be real user later
-  const survivor = SURVIVORS.find(s => s.id === survivorId)
-  
-  // Mock applications data
+  const navigate = useNavigate()
+
   const [applications, setApplications] = useState([
     {
       id: 'app-1',
       jobId: 'job-1',
       jobTitle: 'Data Entry Operator',
-      company: 'TechCorp',
+      company: 'TechCorp Solutions',
       appliedDate: '2025-06-10',
-      status: 'Applied', // Applied, Reviewed, Interview, Offered, Rejected
+      status: 'Applied',
       lastUpdate: '2025-06-15',
-      notes: 'Waiting for response'
+      notes: 'Application submitted and pending initial review.'
     },
     {
       id: 'app-2',
       jobId: 'job-2',
-      jobTitle: 'Customer Service',
+      jobTitle: 'Customer Service Associate',
       company: 'BPO Solutions',
       appliedDate: '2025-06-08',
       status: 'Interview',
       lastUpdate: '2025-06-14',
-      notes: 'Interview scheduled for June 20'
+      notes: 'Initial video interview scheduled for next week.'
     },
     {
       id: 'app-3',
       jobId: 'job-3',
       jobTitle: 'Administrative Assistant',
-      company: 'Corp Inc',
+      company: 'Apex Corporation',
       appliedDate: '2025-06-05',
-      status: 'Rejected',
+      status: 'Under Review',
       lastUpdate: '2025-06-12',
-      notes: 'Not selected this time'
+      notes: 'Profile reviewed by hiring manager.'
     }
   ])
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Applied': return '#2563EB' // Blue
-      case 'Reviewed': return '#F59E0B' // Orange
-      case 'Interview': return '#10B981' // Green
-      case 'Offered': return '#059669' // Dark Green
-      case 'Rejected': return '#DC2626' // Red
-      default: return '#6B7280' // Gray
-    }
-  }
 
   const withdrawApplication = (appId) => {
     if (window.confirm('Are you sure you want to withdraw this application?')) {
       setApplications(applications.filter(app => app.id !== appId))
-      alert('✅ Application withdrawn')
+      alert('Application withdrawn')
     }
   }
 
+  const statItems = [
+    { label: 'Total submitted', value: applications.length },
+    { label: 'Pending review', value: applications.filter(a => a.status === 'Applied' || a.status === 'Under Review').length },
+    { label: 'Interviews', value: applications.filter(a => a.status === 'Interview').length },
+    { label: 'Offers received', value: applications.filter(a => a.status === 'Offered').length }
+  ]
+
   return (
     <Layout>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          My Applications
-        </h1>
-        <p style={{ fontSize: 14, color: '#6B7280' }}>Track your job applications and interview status</p>
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+          My applications
+        </h2>
+        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+          Track your active job applications, interview stages, and status updates
+        </p>
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Total', value: applications.length, color: '#2563EB', bg: '#EFF6FF' },
-          { label: 'Applied', value: applications.filter(a => a.status === 'Applied').length, color: '#2563EB', bg: '#EFF6FF' },
-          { label: 'Interview', value: applications.filter(a => a.status === 'Interview').length, color: '#10B981', bg: '#F0FDF4' },
-          { label: 'Offered', value: applications.filter(a => a.status === 'Offered').length, color: '#059669', bg: '#F0FDF4' }
-        ].map((stat, i) => (
-          <div key={i} style={{ padding: 16, background: stat.bg, borderRadius: 12, textAlign: 'center', border: 'none' }}>
-            <div style={{ fontSize: 24, fontWeight: 800, color: stat.color, fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-              {stat.value}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+        {statItems.map((stat, idx) => {
+          const cardClass = idx === 0 ? 'card-light' : idx % 2 === 1 ? 'card-dark' : 'card'
+          return (
+            <div key={stat.label} className={cardClass} style={{ padding: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.85, marginBottom: 12 }}>
+                {stat.label}
+              </div>
+              <div style={{ fontSize: 40, fontWeight: 300, lineHeight: 1 }}>
+                {stat.value}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>{stat.label}</div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Applications List */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '0.5px solid #E5E7EB', background: '#FFFBEB' }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', margin: 0 }}>
-            📋 Your Applications ({applications.length})
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ color: 'var(--navy)', margin: 0 }}>
+            Application history
           </h3>
+          <span className="badge">
+            {applications.length} active
+          </span>
         </div>
 
         {applications.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#9CA3AF' }}>
-            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>No applications yet</div>
-            <div style={{ fontSize: 12 }}>Start applying to jobs to see them here</div>
+          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--navy)', marginBottom: 8 }}>No active applications</h3>
+            <p style={{ color: 'var(--ink2)', fontSize: 14, marginBottom: 20 }}>
+              Explore available job listings and submit applications to start interviewing.
+            </p>
+            <button className="btn-pill" onClick={() => navigate('/survivor/jobs')}>
+              Explore job board
+            </button>
           </div>
         ) : (
-          <div style={{ overflow: 'auto' }}>
+          <div>
             {applications.map(app => (
-              <div key={app.id} style={{ padding: '16px 20px', borderBottom: '0.5px solid #E5E7EB', background: app.status === 'Offered' ? '#F0FDF4' : '#fff' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 10 }}>
+              <div
+                key={app.id}
+                style={{
+                  padding: '20px 24px',
+                  borderBottom: '1px solid var(--line)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0C1F3F', marginBottom: 2 }}>
+                    <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--navy)', marginBottom: 4 }}>
                       {app.jobTitle}
                     </div>
-                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 6 }}>
                       {app.company}
                     </div>
-                    <div style={{ display: 'flex', gap: 12, fontSize: 11, color: '#9CA3AF' }}>
-                      <span>Applied: {app.appliedDate}</span>
-                      <span>•</span>
-                      <span>Updated: {app.lastUpdate}</span>
+                    <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
+                      Applied on {app.appliedDate} · Last updated {app.lastUpdate}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{
-                      padding: '4px 12px',
-                      background: getStatusColor(app.status),
-                      color: '#fff',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      marginBottom: 10
-                    }}>
+                  <div>
+                    <span className="badge" style={{ background: app.status === 'Interview' ? 'var(--navy)' : 'var(--mist)', color: app.status === 'Interview' ? '#ffffff' : 'var(--navy)' }}>
                       {app.status}
-                    </div>
+                    </span>
                   </div>
                 </div>
 
-                <div style={{ fontSize: 12, color: '#374151', marginBottom: 10, padding: '8px 12px', background: '#F3F4F6', borderRadius: 6 }}>
-                  💬 {app.notes}
+                <div style={{ fontSize: 13, color: 'var(--ink2)', background: 'var(--bg)', padding: '10px 14px', borderRadius: 'var(--r-input)', border: '1px solid var(--line)' }}>
+                  {app.notes}
                 </div>
 
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {app.status === 'Applied' && (
-                    <>
-                      <button style={{
-                        padding: '6px 12px',
-                        background: '#2563EB',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 6,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}>
-                        View Job
-                      </button>
-                      <button style={{
-                        padding: '6px 12px',
-                        background: '#EF4444',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 6,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }} onClick={() => withdrawApplication(app.id)}>
-                        Withdraw
-                      </button>
-                    </>
-                  )}
-                  {app.status === 'Interview' && (
-                    <button style={{
-                      padding: '6px 12px',
-                      background: '#10B981',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}>
-                      View Interview Details
-                    </button>
-                  )}
-                  {app.status === 'Offered' && (
-                    <button style={{
-                      padding: '6px 12px',
-                      background: '#059669',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}>
-                      🎉 Congratulations!
-                    </button>
-                  )}
+                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                  <button className="btn-soft" onClick={() => navigate('/survivor/jobs')}>
+                    View role details
+                  </button>
+                  <button className="btn-soft" onClick={() => withdrawApplication(app.id)}>
+                    Withdraw application
+                  </button>
                 </div>
               </div>
             ))}

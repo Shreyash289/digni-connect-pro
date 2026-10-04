@@ -6,7 +6,7 @@ export default function AIMentor() {
     {
       id: 1,
       type: 'bot',
-      text: 'Hi! I\'m your CAREVIA AI Mentor. I\'m here to help you with career advice, interview prep, and confidence building. What would you like to work on today?',
+      text: "Hi! I'm your CAREVIA AI Career Mentor. I'm here to help you with personalized interview preparation, resume refinement, and career confidence. What would you like to explore today?",
       timestamp: new Date()
     }
   ])
@@ -40,144 +40,131 @@ export default function AIMentor() {
     const text = userText.toLowerCase()
 
     if (text.includes('interview')) {
-      return '🎤 Interview Tips:\n1. Practice common questions\n2. Research the company\n3. Tell your story confidently\n4. Show enthusiasm for the role\n\nWould you like tips on a specific question?'
+      return 'Interview Preparation Strategy:\n1. Practice structured responses focusing on your past responsibilities\n2. Research the company and prepare two thoughtful questions\n3. Speak clearly and calmly about your key strengths\n4. Emphasize your adaptability and dedication to growth\n\nWould you like to practice a specific question together?'
     }
     if (text.includes('resume')) {
-      return '📄 Resume Tips:\n1. Keep it to 1 page\n2. Use clear formatting\n3. Highlight achievements, not just duties\n4. Include relevant skills\n5. Proofread carefully\n\nNeed help with a specific section?'
+      return 'Resume Building Tips:\n1. Keep formatting clean and consistent with clear headings\n2. Highlight demonstrable achievements alongside duties\n3. Include your verified technical and interpersonal skills\n4. Proofread carefully before submitting\n\nWhich section of your profile would you like assistance with?'
     }
     if (text.includes('confidence')) {
-      return '💪 Building Confidence:\n1. Practice self-affirmations\n2. Celebrate small wins\n3. Remember your strengths\n4. Start with achievable goals\n5. Seek support from mentors\n\nYou\'ve overcome challenges before - you can do this!'
+      return 'Building Professional Confidence:\n1. Celebrate every milestone and skill you have mastered\n2. Prepare thoroughly so you feel grounded and centered\n3. Remember your resilience and unique problem-solving abilities\n4. Connect with your supporting NGO mentor for mock interviews\n\nYou have strong abilities to contribute.'
     }
     if (text.includes('skills')) {
-      return '🎯 Skill Development:\n1. Identify gaps in your skills\n2. Take free online courses\n3. Practice regularly\n4. Learn from peers\n5. Apply new skills immediately\n\nWhat skill would you like to develop?'
+      return 'Skill Development Pathways:\n1. Identify skills highlighted in open job postings\n2. Engage in practice exercises and foundation courses\n3. Ask your NGO counselor about vocational certification opportunities\n4. Add new completed proficiencies directly to your CAREVIA profile'
     }
     if (text.includes('job')) {
-      return '💼 Job Search Strategy:\n1. Target roles that match your skills\n2. Customize applications\n3. Network actively\n4. Follow up after interviews\n5. Keep learning\n\nHow can I help with your job search?'
+      return 'Job Search Guidance:\n1. Focus on postings aligned with your verified strengths\n2. Ensure your profile details and documents are complete\n3. Track updates regularly in your Applications tab\n\nHow can I help you find the best match today?'
     }
-    return '✨ That\'s a great question! Remember, your journey is unique and valuable. You have the skills and resilience to succeed. What specific area would you like to explore?'
+    return "That's an important topic. Your journey is valuable and each step forward builds a stronger career path. What specific area would you like to focus on next?"
   }
+
+  const quickTopics = [
+    'Interview preparation',
+    'Resume assistance',
+    'Confidence building',
+    'Skill development',
+    'Job search strategy'
+  ]
 
   return (
     <Layout>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          🤖 AI Mentor
-        </h1>
-        <p style={{ fontSize: 14, color: '#6B7280' }}>Get personalized career guidance and interview prep</p>
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+          AI Career Mentor
+        </h2>
+        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+          Confidential, personalized career guidance and interview practice
+        </p>
       </div>
 
-      {/* Chat Container */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '600px' }}>
-        {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 20, background: '#F9FAFB' }}>
+      {/* Chat Container Card */}
+      <div
+        className="card"
+        style={{
+          padding: 0,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          height: 600,
+          borderRadius: 'var(--r-card)'
+        }}
+      >
+        {/* Messages scroll area */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {messages.map(msg => (
-            <div key={msg.id} style={{ marginBottom: 16 }}>
-              {msg.type === 'user' ? (
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <div style={{
-                    maxWidth: '70%',
-                    padding: '12px 16px',
-                    background: '#2563EB',
-                    color: '#fff',
-                    borderRadius: 12,
-                    fontSize: 13,
-                    lineHeight: 1.5,
-                    whiteSpace: 'pre-wrap'
-                  }}>
-                    {msg.text}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <div style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: 'rgba(37, 99, 235, 0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 16,
-                    flexShrink: 0
-                  }}>
-                    🤖
-                  </div>
-                  <div style={{
-                    maxWidth: '70%',
-                    padding: '12px 16px',
-                    background: '#fff',
-                    border: '0.5px solid #E5E7EB',
-                    borderRadius: 12,
-                    fontSize: 13,
-                    lineHeight: 1.6,
-                    whiteSpace: 'pre-wrap'
-                  }}>
-                    {msg.text}
-                  </div>
-                </div>
-              )}
+            <div
+              key={msg.id}
+              style={{
+                display: 'flex',
+                justifyContent: msg.type === 'user' ? 'flex-end' : 'flex-start'
+              }}
+            >
+              <div
+                style={{
+                  maxWidth: '75%',
+                  padding: '14px 18px',
+                  borderRadius: 'var(--r-card)',
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap',
+                  background: msg.type === 'user' ? 'var(--navy)' : 'var(--mist)',
+                  color: msg.type === 'user' ? '#ffffff' : 'var(--ink)',
+                  border: msg.type === 'user' ? 'none' : '1px solid var(--line)'
+                }}
+              >
+                {msg.text}
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Input */}
-        <div style={{ padding: 16, borderTop: '0.5px solid #E5E7EB', background: '#fff' }}>
-          <div style={{ display: 'flex', gap: 10 }}>
+        {/* Input Row */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid var(--line)', background: 'var(--card)' }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <input
               type="text"
+              className="input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="Ask about interviews, resume, skills, confidence..."
-              style={{
-                flex: 1,
-                padding: '11px 13px',
-                border: '0.5px solid #E5E7EB',
-                borderRadius: 6,
-                fontSize: 13,
-                fontFamily: 'Inter',
-                boxSizing: 'border-box'
-              }}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              placeholder="Ask about interview tips, resume guidance, or skills..."
             />
             <button
               onClick={sendMessage}
+              className="btn-pill"
               style={{
-                padding: '11px 16px',
-                background: '#2563EB',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer'
+                width: 44,
+                height: 44,
+                padding: 0,
+                borderRadius: 'var(--r-pill)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
               }}
+              title="Send message"
+              aria-label="Send message"
             >
-              Send
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Quick Topics */}
+      {/* Quick topics */}
       <div style={{ marginTop: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', marginBottom: 12 }}>
-          Quick Topics
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink2)', marginBottom: 10 }}>
+          Suggested conversation topics
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
-          {['Interview Tips', 'Resume Help', 'Build Confidence', 'Skill Development', 'Job Search'].map(topic => (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {quickTopics.map(topic => (
             <button
               key={topic}
               onClick={() => setInput(topic)}
-              style={{
-                padding: '10px 12px',
-                background: '#EFF6FF',
-                color: '#2563EB',
-                border: '0.5px solid #BFDBFE',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
+              className="btn-soft"
+              style={{ fontSize: 13 }}
             >
               {topic}
             </button>

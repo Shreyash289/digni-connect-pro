@@ -1,0 +1,326 @@
+/* ==========================================================================
+   CAREVIA — Launch Screen Styles
+   ========================================================================== */
+
+.carevia-launch {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(180deg, #F3F7FF 0%, #C9D8FB 48%, #6F8FE6 100%);
+  border-bottom-left-radius: 48px;
+  border-bottom-right-radius: 48px;
+  box-shadow: 0 20px 50px rgba(15, 34, 80, 0.25);
+  will-change: transform;
+  pointer-events: auto;
+}
+
+.carevia-launch.exiting {
+  animation: launchLift 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.carevia-launch.exiting-skip {
+  animation: launchLift 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes launchLift {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-104%);
+  }
+}
+
+/* Center Content */
+.launch-center-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: -40px;
+}
+
+/* Logo */
+.launch-logo {
+  height: 92px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 20px;
+  opacity: 0;
+  transform: scale(0.6);
+  animation: launchLogoPop 1s cubic-bezier(0.22, 1, 0.36, 1) 0.7s forwards;
+}
+
+@keyframes launchLogoPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Wordmark */
+.launch-wordmark {
+  font-family: var(--font, 'Plus Jakarta Sans', system-ui, sans-serif);
+  font-weight: 300;
+  font-size: clamp(34px, 6vw, 52px);
+  color: var(--navy, #0F2250);
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: 0.7em;
+  opacity: 0;
+  animation: launchWordmarkReveal 1.3s cubic-bezier(0.22, 1, 0.36, 1) 1.3s forwards;
+}
+
+@keyframes launchWordmarkReveal {
+  0% {
+    opacity: 0;
+    letter-spacing: 0.7em;
+  }
+  100% {
+    opacity: 1;
+    letter-spacing: 0.14em;
+  }
+}
+
+/* Tagline */
+.launch-tagline {
+  font-family: var(--font, 'Plus Jakarta Sans', system-ui, sans-serif);
+  font-size: 14px;
+  color: #3A4B73;
+  margin-top: 10px;
+  margin-bottom: 0;
+  opacity: 0;
+  animation: launchTaglineFade 0.7s ease 1.9s forwards;
+}
+
+@keyframes launchTaglineFade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hills */
+.launch-hills {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 46%;
+  pointer-events: none;
+  z-index: 2;
+  overflow: visible;
+}
+
+.launch-hill-back {
+  transform: translateY(100%);
+  animation: launchHillRise 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0s forwards;
+}
+
+.launch-hill-front {
+  transform: translateY(100%);
+  animation: launchHillRise 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards;
+}
+
+@keyframes launchHillRise {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Coins / Floating Orbs */
+.launch-coin-left-wrapper {
+  position: absolute;
+  left: 12%;
+  top: 20%;
+  z-index: 3;
+  opacity: 0;
+  transform: translateY(40px) scale(0.85);
+  animation: launchCoinPop 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+}
+
+.launch-coin-right-wrapper {
+  position: absolute;
+  right: 11%;
+  top: 14%;
+  z-index: 3;
+  opacity: 0;
+  transform: translateY(40px) scale(0.85);
+  animation: launchCoinPop 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.5s forwards;
+}
+
+@keyframes launchCoinPop {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.launch-coin-left {
+  width: clamp(70px, 9vw, 130px);
+  aspect-ratio: 0.72;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #F4F7FF, #9DB4F5 50%, #3A5FD0);
+  box-shadow: 0 10px 24px rgba(15, 34, 80, 0.25);
+  transform: rotate(-8deg);
+  animation: launchCoinBob 6s ease-in-out infinite;
+}
+
+.launch-coin-right {
+  width: clamp(80px, 10vw, 145px);
+  aspect-ratio: 0.72;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #F4F7FF, #9DB4F5 50%, #3A5FD0);
+  box-shadow: 0 12px 28px rgba(15, 34, 80, 0.25);
+  transform: rotate(14deg);
+  animation: launchCoinBob 6s ease-in-out 0.8s infinite;
+}
+
+@keyframes launchCoinBob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Progress bar */
+.launch-progress-track {
+  position: absolute;
+  bottom: calc(11% + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  z-index: 20;
+}
+
+.launch-progress-fill {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 999px;
+  transform-origin: left center;
+  transform: scaleX(0);
+  animation: launchProgressFill 1.5s cubic-bezier(0.22, 1, 0.36, 1) 1.5s forwards;
+}
+
+@keyframes launchProgressFill {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+/* Skip Button */
+.launch-skip-btn {
+  position: absolute;
+  bottom: calc(4% + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(15, 34, 80, 0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--font, 'Plus Jakarta Sans', system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0;
+  animation: launchSkipFade 0.5s ease 1.0s forwards;
+  transition: opacity 0.2s, background-color 0.2s, transform 0.2s;
+}
+
+.launch-skip-btn:hover {
+  background: rgba(15, 34, 80, 0.4);
+  color: #ffffff;
+}
+
+.launch-skip-btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+@keyframes launchSkipFade {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  100% {
+    opacity: 0.95;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Reduced Motion Mode */
+@media (prefers-reduced-motion: reduce) {
+  .carevia-launch {
+    animation: none !important;
+  }
+  .carevia-launch.reduced-motion-fade {
+    animation: launchReducedFadeOut 0.4s ease forwards !important;
+  }
+  @keyframes launchReducedFadeOut {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+  .launch-logo,
+  .launch-wordmark,
+  .launch-tagline,
+  .launch-hill-back,
+  .launch-hill-front,
+  .launch-coin-left-wrapper,
+  .launch-coin-right-wrapper,
+  .launch-coin-left,
+  .launch-coin-right,
+  .launch-progress-fill,
+  .launch-skip-btn {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .launch-progress-track {
+    display: none;
+  }
+  .launch-skip-btn {
+    display: none;
+  }
+}

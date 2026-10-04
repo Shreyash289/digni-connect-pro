@@ -1,12 +1,14 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { SURVIVORS } from '../../data/mockData'
 
 export default function SavedCandidates() {
+  const navigate = useNavigate()
   const [savedCandidates, setSavedCandidates] = useState([
-    { ...SURVIVORS[0], savedDate: '2025-06-15', notes: 'Great fit for Data Entry role' },
-    { ...SURVIVORS[2], savedDate: '2025-06-14', notes: 'Excellent communication skills' },
-    { ...SURVIVORS[4], savedDate: '2025-06-10', notes: 'Will follow up next week' }
+    { ...SURVIVORS[0], savedDate: '2025-06-15', notes: 'Strong match for data operations and typing accuracy.' },
+    { ...SURVIVORS[2], savedDate: '2025-06-14', notes: 'Excellent communication and vocational background.' },
+    { ...SURVIVORS[4], savedDate: '2025-06-10', notes: 'Follow-up interview scheduled through partner NGO.' }
   ])
 
   const [filterSkill, setFilterSkill] = useState('all')
@@ -16,7 +18,7 @@ export default function SavedCandidates() {
 
   const filtered = filterSkill === 'all' 
     ? savedCandidates 
-    : savedCandidates.filter(c => c.skills.includes(filterSkill))
+    : savedCandidates.filter(c => c.skills?.includes(filterSkill))
 
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === 'recent') return new Date(b.savedDate) - new Date(a.savedDate)
@@ -36,51 +38,51 @@ export default function SavedCandidates() {
     ))
   }
 
+  const statItems = [
+    { label: 'Bookmarked profiles', value: savedCandidates.length },
+    { label: 'Chennai candidates', value: savedCandidates.filter(c => c.location?.includes('Chennai')).length },
+    { label: 'High match rating', value: savedCandidates.filter(c => (c.completeness || 0) >= 80).length }
+  ]
+
   return (
     <Layout>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          📌 Saved Candidates
-        </h1>
-        <p style={{ fontSize: 14, color: '#6B7280' }}>Your bookmarked survivor profiles</p>
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+          Shortlisted candidates
+        </h2>
+        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+          Manage your saved candidate bookmarks and interview notes
+        </p>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        <div style={{ padding: 16, background: '#EFF6FF', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#2563EB', fontFamily: 'Plus Jakarta Sans' }}>
-            {savedCandidates.length}
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>Saved Candidates</div>
-        </div>
-        <div style={{ padding: 16, background: '#F0FDF4', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#059669', fontFamily: 'Plus Jakarta Sans' }}>
-            {savedCandidates.filter(c => c.location === 'Chennai').length}
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>In Chennai</div>
-        </div>
-        <div style={{ padding: 16, background: '#F5F3FF', borderRadius: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: '#7C3AED', fontFamily: 'Plus Jakarta Sans' }}>
-            {savedCandidates.filter(c => c.completeness >= 80).length}
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>High Match</div>
-        </div>
+      {/* Stat Tiles */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 28 }}>
+        {statItems.map((stat, idx) => {
+          const cardClass = idx === 0 ? 'card-light' : idx % 2 === 1 ? 'card-dark' : 'card'
+          return (
+            <div key={stat.label} className={cardClass} style={{ padding: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.85, marginBottom: 12 }}>
+                {stat.label}
+              </div>
+              <div style={{ fontSize: 40, fontWeight: 300, lineHeight: 1 }}>
+                {stat.value}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
-      {/* Filters */}
-      <div className="card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 16, alignItems: 'center' }}>
-        <div>
-          <label style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, display: 'block', marginBottom: 6 }}>Filter by Skill</label>
+      {/* Filters Card */}
+      <div className="card" style={{ padding: 20, marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 200px' }}>
+          <label style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+            Filter by skill competency
+          </label>
           <select 
+            className="input"
             value={filterSkill}
             onChange={(e) => setFilterSkill(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 6,
-              border: '0.5px solid #E5E7EB',
-              fontSize: 13,
-              fontFamily: 'Inter'
-            }}
+            style={{ cursor: 'pointer' }}
           >
             {allSkills.map(skill => (
               <option key={skill} value={skill}>
@@ -90,143 +92,102 @@ export default function SavedCandidates() {
           </select>
         </div>
 
-        <div>
-          <label style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, display: 'block', marginBottom: 6 }}>Sort by</label>
+        <div style={{ flex: '1 1 200px' }}>
+          <label style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+            Sort order
+          </label>
           <select 
+            className="input"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 6,
-              border: '0.5px solid #E5E7EB',
-              fontSize: 13,
-              fontFamily: 'Inter'
-            }}
+            style={{ cursor: 'pointer' }}
           >
-            <option value="recent">Recently Saved</option>
-            <option value="name">Name (A-Z)</option>
+            <option value="recent">Recently saved</option>
+            <option value="name">Candidate name (A–Z)</option>
           </select>
         </div>
       </div>
 
-      {/* Candidates List */}
+      {/* Candidate Cards Grid */}
       {sorted.length === 0 ? (
-        <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color: '#9CA3AF' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>No saved candidates</div>
-          <div style={{ fontSize: 12 }}>Find talent and save profiles to see them here</div>
+        <div className="card" style={{ padding: '64px 24px', textAlign: 'center' }}>
+          <h3 style={{ color: 'var(--navy)', marginBottom: 8 }}>
+            No saved candidates
+          </h3>
+          <p style={{ color: 'var(--ink2)', fontSize: 14, maxWidth: 440, margin: '0 auto 20px' }}>
+            Browse talent from discovery and bookmark candidate profiles to organize them here.
+          </p>
+          <button className="btn-pill" onClick={() => navigate('/recruiter')}>
+            Discover candidates
+          </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
           {sorted.map(candidate => (
-            <div key={candidate.id} className="card" style={{ padding: 16 }}>
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    background: `${candidate.color}20`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: candidate.color
-                  }}>
-                    {candidate.initials}
-                  </div>
+            <div key={candidate.id} className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0C1F3F' }}>
-                      {candidate.initials}
+                    <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--navy)', marginBottom: 2 }}>
+                      {candidate.name}
                     </div>
-                    <div style={{ fontSize: 11, color: '#6B7280' }}>
-                      {candidate.age} years • {candidate.location}
+                    <div style={{ fontSize: 13, color: 'var(--ink2)' }}>
+                      {candidate.age} yrs · {candidate.location}
                     </div>
                   </div>
+                  <span className="badge">
+                    Saved {candidate.savedDate}
+                  </span>
                 </div>
-                <div style={{ fontSize: 12, color: '#6B7280' }}>
-                  Saved {candidate.savedDate}
-                </div>
-              </div>
 
-              {/* Skills */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', marginBottom: 6 }}>Top Skills</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {candidate.skills.slice(0, 3).map(skill => (
-                    <span key={skill} style={{
-                      padding: '2px 8px',
-                      background: '#F3F4F6',
-                      color: '#374151',
-                      borderRadius: 4,
-                      fontSize: 10,
-                      fontWeight: 500
-                    }}>
+                {/* Skills */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                  {candidate.skills?.map(skill => (
+                    <span key={skill} className="badge" style={{ fontSize: 11, padding: '3px 10px' }}>
                       {skill}
                     </span>
                   ))}
                 </div>
-              </div>
 
-              {/* Profile Match */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#6B7280' }}>Profile Match</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>{candidate.completeness}%</span>
+                {/* Completeness */}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink2)', marginBottom: 4 }}>
+                    <span>Profile match</span>
+                    <span>{candidate.completeness}%</span>
+                  </div>
+                  <div style={{ height: 6, background: 'var(--mist)', borderRadius: 'var(--r-pill)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${candidate.completeness}%`, background: 'var(--royal)', borderRadius: 'var(--r-pill)' }} />
+                  </div>
                 </div>
-                <div className="progress-track">
-                  <div className="progress-fill" style={{ width: `${candidate.completeness}%` }} />
-                </div>
-              </div>
 
-              {/* Notes */}
-              <div style={{ marginBottom: 12 }}>
-                <textarea
-                  value={candidate.notes}
-                  onChange={(e) => updateNotes(candidate.id, e.target.value)}
-                  placeholder="Add notes about this candidate..."
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: 6,
-                    border: '0.5px solid #E5E7EB',
-                    fontSize: 11,
-                    fontFamily: 'Inter',
-                    minHeight: 50,
-                    resize: 'none'
-                  }}
-                />
+                {/* Internal Notes */}
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+                    Recruiter notes
+                  </label>
+                  <textarea
+                    className="input"
+                    value={candidate.notes || ''}
+                    onChange={(e) => updateNotes(candidate.id, e.target.value)}
+                    placeholder="Add interview notes or observations..."
+                    rows={2}
+                    style={{ resize: 'none', fontSize: 13 }}
+                  />
+                </div>
               </div>
 
               {/* Actions */}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  background: '#2563EB',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}>
-                  View Profile
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  className="btn-pill"
+                  style={{ flex: 1 }}
+                  onClick={() => alert('View profile detail for ' + candidate.name)}
+                >
+                  View profile
                 </button>
                 <button 
+                  className="btn-soft"
                   onClick={() => removeSaved(candidate.id)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    background: '#FEE2E2',
-                    color: '#DC2626',
-                    border: '0.5px solid #FECACA',
-                    borderRadius: 6,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
                 >
                   Remove
                 </button>
