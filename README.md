@@ -150,14 +150,6 @@ See `SECURITY_PRIVACY_ARCHITECTURE.md` for full production requirements.
 - `SECURITY_DEMO_REFERENCE.md` — Quick security reference for presentation
 - `SECURITY_PRIVACY_ARCHITECTURE.md` — Complete security architecture (separate file)
 
-## 💡 Tips for Demo
-
-- Use Chrome DevTools to show responsive design
-- Shortlist a few survivors to show functionality
-- Try different filter combinations
-- Use Admin portal to approve pending profiles
-- Point out data masking in recruiter portal
-
 ---
 
 **Built for**: SRM University × RRU Pondicherry × CAREVIA
