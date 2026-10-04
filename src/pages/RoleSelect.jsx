@@ -1,123 +1,207 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../integrations/supabase/client'
-import { assignInitialRole, fetchMyRoles, homePathForRoles, resolveHomeAfterAuth } from '../lib/roles'
+import logoNavy from '../assets/carevia-logo-navy.png'
 
 const ROLES = [
-  { id: 'survivor', icon: '👤', title: 'Survivor / Intern', desc: 'Create your profile, get AI career guidance, track your journey to employment.', color: '#0D9488', bg: '#F0FDFA', border: '#99F6E4' },
-  { id: 'ngo_partner', icon: '🤝', title: 'NGO Partner', desc: 'Manage survivors, upload documents, track placements and progress.', color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE' },
-  { id: 'recruiter', icon: '🔎', title: 'Recruiter', desc: 'Search verified survivor talent, filter by skills, download resumes, hire directly.', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
+  {
+    id: 'survivor',
+    title: 'Survivor / Intern',
+    desc: 'Create your profile, get AI career guidance, track your journey to employment.',
+    path: '/survivor',
+    isSurvivor: true,
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    )
+  },
+  {
+    id: 'ngo',
+    title: 'NGO Partner',
+    desc: 'Manage survivors, upload documents, track placements and verify progress.',
+    path: '/ngo',
+    isSurvivor: false,
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    )
+  },
+  {
+    id: 'recruiter',
+    title: 'Recruiter',
+    desc: 'Search verified survivor talent, filter by skills, download resumes, and hire directly.',
+    path: '/recruiter',
+    isSurvivor: false,
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" x2="16.65" y1="21" y2="16.65"/>
+      </svg>
+    )
+  },
+  {
+    id: 'admin',
+    title: 'Platform Admin',
+    desc: 'Approve profiles, manage NGOs, monitor platform analytics, and review audit logs.',
+    path: '/admin',
+    isSurvivor: false,
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    )
+  },
 ]
 
 export default function RoleSelect() {
   const navigate = useNavigate()
-  const [busy, setBusy] = useState(null)
-  const [error, setError] = useState('')
-  const [companyPrompt, setCompanyPrompt] = useState(false)
-  const [companyName, setCompanyName] = useState('')
-
-  // Only accounts with no role at all should ever see this page
-  useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) return navigate('/login', { replace: true })
-      const home = await resolveHomeAfterAuth()
-      if (home !== '/select-role') navigate(home, { replace: true })
-    })
-  }, [navigate])
-
-  async function commitRole(roleId, extra) {
-    setError('')
-    setBusy(roleId)
-    try {
-      await assignInitialRole(roleId, extra)
-      const { roles } = await fetchMyRoles()
-      navigate(homePathForRoles(roles) ?? '/login')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not set your role. Please try again.')
-    } finally {
-      setBusy(null)
-    }
-  }
 
   const handleSelect = (role) => {
-    if (role.id === 'recruiter') {
-      setCompanyPrompt(true)
-      return
-    }
-    commitRole(role.id)
+    localStorage.setItem('role', role.id)
+    navigate(role.path)
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FAF9F6', padding: '40px 24px' }}>
-      <div className="fade-in" style={{ textAlign: 'center', marginBottom: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 24 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 8, background: '#0C1F3F', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#fff', fontFamily: 'Plus Jakarta Sans' }}>C</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans' }}>CAREVIA</div>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg)',
+        padding: '48px 24px'
+      }}
+    >
+      <div style={{ textAlign: 'center', marginBottom: 36, maxWidth: 640 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 16 }}>
+          <img
+            src={logoNavy}
+            alt="CareVia Logo"
+            style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+          />
+          <span style={{ fontWeight: 500, fontSize: 18, color: 'var(--navy)', letterSpacing: '-0.3px' }}>
+            CAREVIA
+          </span>
         </div>
-        <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0C1F3F', marginBottom: 10, fontFamily: 'Plus Jakarta Sans' }}>How are you using the platform?</h2>
-        <p style={{ fontSize: 16, color: '#6B7280' }}>Select your role to access your personalized portal</p>
+        <h2
+          style={{
+            fontSize: 'clamp(28px, 5vw, 42px)',
+            fontWeight: 300,
+            color: 'var(--navy)',
+            marginBottom: 8,
+            letterSpacing: '-1.2px'
+          }}
+        >
+          Select your portal
+        </h2>
+        <p style={{ fontSize: 15, color: 'var(--ink2)', margin: 0, fontWeight: 400 }}>
+          Choose your role to access your personalized workspace and tools
+        </p>
       </div>
 
-      {error && (
-        <div style={{ marginBottom: 20, padding: '10px 16px', background: '#FEF2F2', border: '0.5px solid #FECACA', borderRadius: 6, fontSize: 13, color: '#B91C1C' }}>
-          {error}
-        </div>
-      )}
-
-      {companyPrompt ? (
-        <div className="card" style={{ padding: 28, maxWidth: 360, width: '100%' }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0C1F3F', marginBottom: 12, fontFamily: 'Plus Jakarta Sans' }}>
-            What's your company name?
-          </h3>
-          <input
-            type="text"
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="Acme Inc."
-            style={{ width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6, fontSize: 13, marginBottom: 16, boxSizing: 'border-box' }}
-          />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => setCompanyPrompt(false)}
-              style={{ flex: 1, padding: '11px 13px', background: 'transparent', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-            >
-              Back
-            </button>
-            <button
-              onClick={() => commitRole('recruiter', { companyName: companyName.trim() })}
-              disabled={!companyName.trim() || busy === 'recruiter'}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 360px))',
+          gap: 20,
+          maxWidth: 760,
+          width: '100%',
+          justifyContent: 'center'
+        }}
+      >
+        {ROLES.map((role) => {
+          const cardClass = role.isSurvivor ? 'card-light' : 'card-dark'
+          return (
+            <div
+              key={role.id}
+              className={cardClass}
+              onClick={() => handleSelect(role)}
               style={{
-                flex: 1, padding: '11px 13px', background: companyName.trim() ? '#2563EB' : '#D1D5DB', color: '#fff',
-                border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
-                cursor: companyName.trim() ? 'pointer' : 'not-allowed',
+                cursor: 'pointer',
+                borderRadius: 'var(--r-card)',
+                transition: 'transform 0.2s',
+                display: 'flex',
+                flexDirection: 'column',
+                justify: 'space-between'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
               }}
             >
-              {busy === 'recruiter' ? 'Setting up…' : 'Continue →'}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 360px)', gap: 20, maxWidth: 760 }}>
-          {ROLES.map((role, i) => (
-            <div key={role.id} className="card card-hover fade-in" onClick={() => (busy ? null : handleSelect(role))}
-              style={{
-                padding: '28px', cursor: busy ? 'wait' : 'pointer', border: `1.5px solid ${role.border}`,
-                background: role.bg, animationDelay: `${i * 0.08}s`, opacity: busy && busy !== role.id ? 0.5 : 1,
-              }}>
-              <div style={{ fontSize: 36, marginBottom: 16 }}>{role.icon}</div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: role.color, marginBottom: 10, fontFamily: 'Plus Jakarta Sans' }}>{role.title}</h3>
-              <p style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.6, marginBottom: 16 }}>{role.desc}</p>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: role.color, fontSize: 13, fontWeight: 600 }}>
-                {busy === role.id ? 'Setting up…' : 'Enter portal →'}
+              <div>
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 'var(--r-pill)',
+                    background: role.isSurvivor ? 'rgba(15, 34, 80, 0.1)' : 'rgba(255, 255, 255, 0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: role.isSurvivor ? 'var(--navy)' : '#ffffff',
+                    marginBottom: 20
+                  }}
+                >
+                  {role.icon}
+                </div>
+                <h3
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 500,
+                    color: role.isSurvivor ? 'var(--navy)' : '#ffffff',
+                    marginBottom: 8
+                  }}
+                >
+                  {role.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: 14,
+                    color: role.isSurvivor ? 'var(--ink2)' : '#B8C6EA',
+                    lineHeight: 1.5,
+                    marginBottom: 24,
+                    fontWeight: 400
+                  }}
+                >
+                  {role.desc}
+                </p>
+              </div>
+
+              <div>
+                <button
+                  className={role.isSurvivor ? 'btn-pill' : 'btn-soft'}
+                  style={{
+                    padding: '9px 18px',
+                    fontSize: 13,
+                    background: role.isSurvivor ? 'var(--navy)' : 'rgba(255, 255, 255, 0.15)',
+                    color: '#ffffff'
+                  }}
+                >
+                  Enter portal →
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          )
+        })}
+      </div>
 
-      <div style={{ marginTop: 32, fontSize: 13, color: '#9CA3AF' }}>
-        Not the right role?{' '}
-        <span style={{ color: '#2563EB', cursor: 'pointer', fontWeight: 500 }} onClick={() => navigate('/login')}>Go back</span>
+      <div style={{ marginTop: 36, fontSize: 13, color: 'var(--ink2)' }}>
+        Need to sign in to another account?{' '}
+        <span
+          style={{ color: 'var(--royal)', cursor: 'pointer', fontWeight: 500 }}
+          onClick={() => navigate('/login')}
+        >
+          Back to sign in
+        </span>
       </div>
     </div>
   )

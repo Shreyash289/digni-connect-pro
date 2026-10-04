@@ -1,214 +1,551 @@
-import { useRef, useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import { PageHeader, StatGrid, ErrorBanner, EmptyState, Loading, btn, fieldInput, fieldLabel } from '../../components/ui'
+import { resumeService } from '../../services/resumeService'
 import { supabase } from '../../integrations/supabase/client'
-import { useLiveQuery } from '../../lib/live'
-import { getMySurvivor, formatDate } from '../../lib/careers'
-
-const BUCKET = 'survivor-documents'
-const MAX_BYTES = 5 * 1024 * 1024
-const ACCEPT = ['application/pdf', 'image/jpeg', 'image/png']
-
-const DOC_TYPES = [
-  { value: 'id_proof', label: 'ID Proof', icon: '🆔' },
-  { value: 'education', label: 'Education', icon: '🎓' },
-  { value: 'bgv', label: 'Background Verification', icon: '🛡️' },
-  { value: 'resume', label: 'Resume', icon: '📄' },
-  { value: 'photo', label: 'Photograph', icon: '📸' },
-  { value: 'other', label: 'Other', icon: '📁' },
-]
-const typeInfo = (v) => DOC_TYPES.find((t) => t.value === v) ?? { value: v, label: v, icon: '📁' }
-
-const STATUS = {
-  verified: { label: '✓ Verified', bg: '#D1FAE5', color: '#059669' },
-  pending: { label: '⏳ Pending review', bg: '#FEF3C7', color: '#D97706' },
-  rejected: { label: '✕ Rejected', bg: '#FEE2E2', color: '#DC2626' },
-}
-
-const formatSize = (b) => (b == null ? '' : b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`)
-
-async function loadDocuments() {
-  const survivor = await getMySurvivor()
-  const { data, error } = await supabase
-    .from('survivor_documents')
-    .select('id, doc_type, file_name, storage_path, mime_type, size_bytes, status, created_at')
-    .eq('survivor_id', survivor.id)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return { survivorId: survivor.id, documents: data ?? [] }
-}
 
 export default function DocumentsVault() {
-  const { data, loading, error, reload, live } = useLiveQuery(loadDocuments, { tables: ['survivor_documents'] })
-  const [docType, setDocType] = useState('id_proof')
+  const navigate = useNavigate()
+  const userId = localStorage.getItem('userId')
+  const userEmail = localStorage.getItem('email') || ''
+  const isDemoUser = !userId || userEmail.includes('demo')
+
+  // Existing documents state
+  const [documents, setDocuments] = useState([
+    {
+      id: 'doc-1',
+      name: 'Aadhaar_Card_Verification.pdf',
+      type: 'Government ID',
+      uploadDate: '2025-06-01',
+      size: '2.4 MB',
+      verified: true
+    },
+    {
+      id: 'doc-2',
+      name: 'Class10_Certificate.pdf',
+      type: 'Education Proof',
+      uploadDate: '2025-06-02',
+      size: '1.8 MB',
+      verified: true
+    },
+    {
+      id: 'doc-3',
+      name: 'NGO_Verification_Letter.pdf',
+      type: 'Support Verification',
+      uploadDate: '2025-06-05',
+      size: '3.1 MB',
+      verified: false
+    },
+    {
+      id: 'doc-4',
+      name: 'Resume_Meena_Rajeshwari.pdf',
+      type: 'Resume',
+      uploadDate: '2025-06-10',
+      size: '1.2 MB',
+      verified: true
+    }
+  ])
+
   const [dragActive, setDragActive] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState('')
-  const [busyId, setBusyId] = useState(null)
-  const fileInput = useRef(null)
 
-  const documents = data?.documents ?? []
+  // Resume section state
+  const [uploadedResumes, setUploadedResumes] = useState([])
+  const [loadingResumes, setLoadingResumes] = useState(false)
+  const [uploadingResume, setUploadingResume] = useState(false)
+  const [resumeNotice, setResumeNotice] = useState(null)
+  const [selectedFile, setSelectedFile] = useState(null)
 
-  const upload = async (files) => {
-    const list = Array.from(files ?? [])
-    if (!list.length || !data?.survivorId) return
-    setUploadError('')
+  useEffect(() => {
+    if (userId && !isDemoUser) {
+      fetchResumes(userId)
+    }
+  }, [userId, isDemoUser])
 
-    const bad = list.find((f) => !ACCEPT.includes(f.type) || f.size > MAX_BYTES)
-    if (bad) {
-      setUploadError(!ACCEPT.includes(bad.type)
-        ? `"${bad.name}" isn't a PDF, JPG or PNG.`
-        : `"${bad.name}" is larger than 5 MB.`)
+  const fetchResumes = async (uid) => {
+    setLoadingResumes(true)
+    const { data, error, unavailable } = await resumeService.listResumes(uid)
+    if (unavailable) {
+      console.warn('Resume table unavailable')
+    } else if (error) {
+      console.warn('Error fetching resumes:', error)
+    } else if (data) {
+      setUploadedResumes(data)
+    }
+    setLoadingResumes(false)
+  }
+
+  // Existing document handlers
+  const deleteDocument = (docId) => {
+    if (window.confirm('Are you sure you want to remove this document?')) {
+      setDocuments(documents.filter((doc) => doc.id !== docId))
+      alert('Document removed')
+    }
+  }
+
+  const handleDrag = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true)
+    } else if (e.type === 'dragleave') {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+    alert('File upload received (demo)')
+  }
+
+  // Resume File Selection & Validation
+  const handleResumeFileSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setResumeNotice(null)
+    const validExtensions = ['.pdf', '.doc', '.docx']
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
+
+    if (!validExtensions.includes(fileExt)) {
+      setResumeNotice({
+        type: 'error',
+        text: 'Invalid file format. Please upload a PDF, DOC, or DOCX file.'
+      })
+      setSelectedFile(null)
       return
     }
 
-    setUploading(true)
+    // 10MB file size limit
+    if (file.size > 10 * 1024 * 1024) {
+      setResumeNotice({
+        type: 'error',
+        text: 'File size exceeds limit (10 MB maximum).'
+      })
+      setSelectedFile(null)
+      return
+    }
+
+    setSelectedFile(file)
+  }
+
+  // Resume Upload Handler
+  const handleUploadResume = async () => {
+    if (!selectedFile) return
+
+    if (isDemoUser) {
+      setResumeNotice({
+        type: 'info',
+        text: 'Sign in with your account to save files online. You can also build your resume with the online builder.'
+      })
+      return
+    }
+
+    setUploadingResume(true)
+    setResumeNotice(null)
+
+    const path = `${userId}/${Date.now()}_${selectedFile.name}`
+    const { data: uploadData, error: uploadErr, unavailable: uploadUnavailable } =
+      await resumeService.uploadResumeDocument(selectedFile, path)
+
+    if (uploadUnavailable) {
+      setResumeNotice({
+        type: 'warning',
+        text: 'Storage service for resume uploads is currently unavailable on the backend.'
+      })
+      setUploadingResume(false)
+      return
+    }
+
+    if (uploadErr) {
+      setResumeNotice({
+        type: 'error',
+        text: `Upload failed: ${uploadErr}`
+      })
+      setUploadingResume(false)
+      return
+    }
+
+    // Record header in database if supported
+    await resumeService.saveResume({
+      survivor_id: userId,
+      title: selectedFile.name,
+      file_path: uploadData?.path || path,
+      updated_at: new Date().toISOString()
+    })
+
+    setResumeNotice({
+      type: 'success',
+      text: 'Resume successfully uploaded!'
+    })
+    setSelectedFile(null)
+    setUploadingResume(false)
+
+    // Refresh resume list
+    fetchResumes(userId)
+  }
+
+  const getResumeUrl = (filePath) => {
+    if (!filePath) return null
     try {
-      for (const file of list) {
-        const safeName = file.name.replace(/[^\w.-]+/g, '_').slice(-120)
-        const path = `self/${data.survivorId}/${crypto.randomUUID()}-${safeName}`
-        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type })
-        if (upErr) throw upErr
-        const { error: regErr } = await supabase.rpc('register_my_document', {
-          _doc_type: docType, _file_name: file.name, _storage_path: path, _mime_type: file.type, _size_bytes: file.size,
-        })
-        if (regErr) {
-          await supabase.storage.from(BUCKET).remove([path])
-          throw regErr
-        }
-      }
-      await reload()
-    } catch (err) {
-      setUploadError(err.message || 'Upload failed. Please try again.')
-    } finally {
-      setUploading(false)
-      if (fileInput.current) fileInput.current.value = ''
+      const { data } = supabase.storage.from('resumes').getPublicUrl(filePath)
+      return data?.publicUrl || null
+    } catch {
+      return null
     }
   }
 
-  const download = async (doc) => {
-    setBusyId(doc.id)
-    try {
-      const { data: signed, error: err } = await supabase.storage.from(BUCKET).createSignedUrl(doc.storage_path, 60, { download: doc.file_name })
-      if (err) throw err
-      window.open(signed.signedUrl, '_blank', 'noopener')
-    } catch (err) {
-      window.alert(err.message || 'Could not download the file.')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const remove = async (doc) => {
-    if (!window.confirm(`Delete "${doc.file_name}"? This cannot be undone.`)) return
-    setBusyId(doc.id)
-    try {
-      const { data: path, error: err } = await supabase.rpc('delete_my_document', { _document_id: doc.id })
-      if (err) throw err
-      await supabase.storage.from(BUCKET).remove([path])
-      await reload()
-    } catch (err) {
-      window.alert(err.message || 'Could not delete the document.')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const onDrag = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(e.type === 'dragenter' || e.type === 'dragover')
-  }
-
-  const grouped = DOC_TYPES
-    .map((t) => ({ ...t, docs: documents.filter((d) => d.doc_type === t.value) }))
-    .concat([{ value: '_unknown', label: 'Other', icon: '📁', docs: documents.filter((d) => !DOC_TYPES.some((t) => t.value === d.doc_type)) }])
-    .filter((g) => g.docs.length)
+  const statItems = [
+    { label: 'Total files in vault', value: documents.length },
+    { label: 'Verified by partner', value: documents.filter((d) => d.verified).length },
+    { label: 'Pending review', value: documents.filter((d) => !d.verified).length }
+  ]
 
   return (
     <Layout>
-      <PageHeader title="📂 Document Vault" subtitle="Upload and manage your documents securely" live={live} />
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>Documents vault</h2>
+        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+          Encrypted, role-verified storage for identity proofs, credentials, and resumes
+        </p>
+      </div>
 
+      {/* Stats */}
       <div
-        className="card"
-        onDragEnter={onDrag}
-        onDragLeave={onDrag}
-        onDragOver={onDrag}
-        onDrop={(e) => { onDrag(e); setDragActive(false); upload(e.dataTransfer.files) }}
         style={{
-          padding: 32, textAlign: 'center', marginBottom: 24, transition: 'all 0.2s',
-          border: dragActive ? '2px dashed #2563EB' : '2px dashed #E5E7EB',
-          background: dragActive ? '#EFF6FF' : '#F9FAFB',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 16,
+          marginBottom: 28
         }}
       >
-        <div style={{ fontSize: 40, marginBottom: 12 }}>📤</div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-          {uploading ? 'Uploading…' : 'Drag & drop your documents here'}
-        </div>
-        <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 16 }}>or click to browse (PDF, JPG, PNG · max 5 MB)</div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ textAlign: 'left' }}>
-            <label style={fieldLabel}>Document type</label>
-            <select style={{ ...fieldInput, width: 220 }} value={docType} onChange={(e) => setDocType(e.target.value)}>
-              {DOC_TYPES.map((t) => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
-            </select>
+        {statItems.map((stat, idx) => {
+          const cardClass = idx === 0 ? 'card-light' : idx % 2 === 1 ? 'card-dark' : 'card'
+          return (
+            <div key={stat.label} className={cardClass} style={{ padding: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.85, marginBottom: 12 }}>
+                {stat.label}
+              </div>
+              <div style={{ fontSize: 40, fontWeight: 300, lineHeight: 1 }}>{stat.value}</div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Dedicated Resume Management Section */}
+      <div className="card" style={{ padding: 28, marginBottom: 28, borderLeft: '4px solid var(--navy)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+          <div>
+            <h3 style={{ color: 'var(--navy)', margin: '0 0 4px 0', fontSize: 18 }}>
+              Resumes & CVs
+            </h3>
+            <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+              Manage your career documents, upload existing PDFs, or build a professional resume online.
+            </p>
           </div>
+
           <button
-            style={btn('primary', { padding: '10px 20px', fontSize: 13, opacity: uploading || !data ? 0.6 : 1 })}
-            disabled={uploading || !data}
-            onClick={() => fileInput.current?.click()}
+            onClick={() => navigate('/survivor/resume')}
+            className="btn-primary"
+            style={{ padding: '9px 18px', display: 'flex', alignItems: 'center', gap: 8 }}
           >
-            Browse Files
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Create or Edit Resume
           </button>
-          <input ref={fileInput} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }}
-            onChange={(e) => upload(e.target.files)} />
+        </div>
+
+        {/* Upload Resume Form */}
+        <div
+          style={{
+            background: 'var(--mist)',
+            borderRadius: 'var(--r-card)',
+            padding: 20,
+            marginBottom: 20
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)', marginBottom: 8 }}>
+            Upload Resume File
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 14 }}>
+            Supported formats: PDF, DOC, DOCX (up to 10 MB)
+          </p>
+
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleResumeFileSelect}
+              style={{ display: 'none' }}
+              id="resume-file-input"
+            />
+            <label
+              htmlFor="resume-file-input"
+              className="btn-soft"
+              style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Choose File
+            </label>
+
+            <span style={{ fontSize: 13, color: selectedFile ? 'var(--navy)' : 'var(--ink2)', fontWeight: selectedFile ? 500 : 400 }}>
+              {selectedFile ? selectedFile.name : 'No file selected'}
+            </span>
+
+            {selectedFile && (
+              <button
+                onClick={handleUploadResume}
+                disabled={uploadingResume}
+                className="btn-pill"
+                style={{ padding: '8px 18px', fontSize: 13 }}
+              >
+                {uploadingResume ? 'Uploading...' : 'Upload Resume'}
+              </button>
+            )}
+          </div>
+
+          {/* Resume Upload Banners */}
+          {resumeNotice && (
+            <div
+              style={{
+                marginTop: 14,
+                padding: '10px 14px',
+                borderRadius: 'var(--r-subtle)',
+                fontSize: 13,
+                background:
+                  resumeNotice.type === 'error'
+                    ? '#fff5f5'
+                    : resumeNotice.type === 'success'
+                    ? '#f0fff4'
+                    : resumeNotice.type === 'warning'
+                    ? '#fffaf0'
+                    : '#edf2f7',
+                color:
+                  resumeNotice.type === 'error'
+                    ? '#c53030'
+                    : resumeNotice.type === 'success'
+                    ? '#276749'
+                    : resumeNotice.type === 'warning'
+                    ? '#9c4221'
+                    : 'var(--navy)'
+              }}
+            >
+              {resumeNotice.text}
+            </div>
+          )}
+        </div>
+
+        {/* Uploaded Resumes List */}
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)', marginBottom: 12 }}>
+            Uploaded Resumes
+          </div>
+
+          {loadingResumes ? (
+            <div style={{ fontSize: 13, color: 'var(--ink2)', padding: 12 }}>
+              Loading resumes...
+            </div>
+          ) : uploadedResumes.length === 0 ? (
+            <div
+              style={{
+                padding: '24px 16px',
+                textAlign: 'center',
+                border: '1px dashed var(--line)',
+                borderRadius: 'var(--r-card)',
+                background: '#ffffff'
+              }}
+            >
+              <p style={{ color: 'var(--ink2)', fontSize: 14, margin: '0 0 12px 0' }}>
+                No resumes uploaded yet.
+              </p>
+              <Link
+                to="/survivor/resume"
+                className="btn-soft"
+                style={{ textDecoration: 'none', display: 'inline-flex', padding: '8px 16px', fontSize: 13 }}
+              >
+                Build your resume
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {uploadedResumes.map((res, index) => {
+                const isLatest = index === 0
+                const fileUrl = getResumeUrl(res.file_path)
+
+                return (
+                  <div
+                    key={res.id || index}
+                    style={{
+                      padding: '14px 18px',
+                      borderRadius: 'var(--r-card)',
+                      border: '1px solid var(--line)',
+                      background: isLatest ? 'var(--mist)' : '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 12
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)' }}>
+                          {res.title || res.file_path || 'Uploaded Resume'}
+                        </span>
+                        {isLatest && (
+                          <span
+                            className="badge"
+                            style={{ background: 'var(--navy)', color: '#ffffff', fontSize: 11 }}
+                          >
+                            Latest Resume
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
+                        Uploaded {res.created_at ? new Date(res.created_at).toLocaleDateString() : 'Recently'}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {fileUrl ? (
+                        <a
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-soft"
+                          style={{ textDecoration: 'none', fontSize: 12, padding: '6px 12px' }}
+                        >
+                          View / Download
+                        </a>
+                      ) : (
+                        <button
+                          disabled
+                          className="btn-soft"
+                          style={{ fontSize: 12, padding: '6px 12px', opacity: 0.6, cursor: 'not-allowed' }}
+                          title="File URL unavailable"
+                        >
+                          View
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      <ErrorBanner message={uploadError || error} />
+      {/* Drag & drop upload area for identity & general docs */}
+      <div
+        className="card"
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+        style={{
+          padding: 36,
+          textAlign: 'center',
+          border: dragActive ? '2px dashed var(--royal)' : '1px dashed var(--line)',
+          background: dragActive ? 'var(--mist)' : 'var(--card)',
+          cursor: 'pointer',
+          marginBottom: 28
+        }}
+      >
+        <h3 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+          Upload new verification document
+        </h3>
+        <p style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 18 }}>
+          Drag and drop files here or click to browse (PDF, PNG, JPG up to 5MB)
+        </p>
+        <button className="btn-pill" onClick={() => alert('Browse files demo triggered')}>
+          Browse files
+        </button>
+      </div>
 
-      <StatGrid stats={[
-        { label: 'Total documents', value: documents.length, color: '#059669', bg: '#F0FDF4' },
-        { label: 'Verified', value: documents.filter((d) => d.status === 'verified').length, color: '#2563EB', bg: '#EFF6FF' },
-        { label: 'Pending review', value: documents.filter((d) => d.status === 'pending').length, color: '#D97706', bg: '#FEF3C7' },
-      ]} />
+      {/* Stored Documents List */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div
+          style={{
+            padding: '20px 24px',
+            borderBottom: '1px solid var(--line)',
+            display: 'flex',
+            justify: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <h3 style={{ color: 'var(--navy)', margin: 0 }}>Stored documents</h3>
+          <span className="badge">{documents.length} files</span>
+        </div>
 
-      {loading ? <Loading /> : grouped.length === 0 ? (
-        <EmptyState title="No documents uploaded yet" hint="Upload your ID, certificates or resume. Each one is reviewed and verified before employers rely on it." />
-      ) : grouped.map((g) => (
-        <div key={g.value} className="card" style={{ marginBottom: 20, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '0.5px solid #E5E7EB', background: '#F9FAFB' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', margin: 0 }}>{g.icon} {g.label}</h3>
+        {documents.length === 0 ? (
+          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--navy)', marginBottom: 8 }}>No documents uploaded</h3>
+            <p style={{ color: 'var(--ink2)', fontSize: 14, marginBottom: 20 }}>
+              Upload your identification documents to proceed with profile verification.
+            </p>
+            <button className="btn-pill" onClick={() => alert('Browse files demo triggered')}>
+              Upload document
+            </button>
           </div>
-          {g.docs.map((doc) => {
-            const st = STATUS[doc.status] ?? STATUS.pending
-            const busy = busyId === doc.id
-            return (
-              <div key={doc.id} style={{ padding: '14px 20px', borderBottom: '0.5px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  <div style={{ fontSize: 24 }}>{typeInfo(doc.doc_type).icon}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#0C1F3F', wordBreak: 'break-all' }}>{doc.file_name}</div>
-                    <div style={{ fontSize: 11, color: '#6B7280' }}>{[formatSize(doc.size_bytes), `Uploaded ${formatDate(doc.created_at)}`].filter(Boolean).join(' • ')}</div>
+        ) : (
+          <div>
+            {documents.map((doc) => (
+              <div
+                key={doc.id}
+                style={{
+                  padding: '18px 24px',
+                  borderBottom: '1px solid var(--line)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 500,
+                      color: 'var(--navy)',
+                      marginBottom: 2
+                    }}
+                  >
+                    {doc.name}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
+                    {doc.type} · {doc.size} · Uploaded on {doc.uploadDate}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ padding: '4px 10px', background: st.bg, color: st.color, borderRadius: 6, fontSize: 10, fontWeight: 600 }}>{st.label}</span>
-                  <button style={btn('ghost')} disabled={busy} onClick={() => download(doc)}>Download</button>
-                  <button style={btn('danger')} disabled={busy} onClick={() => remove(doc)}>Delete</button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span
+                    className="badge"
+                    style={{
+                      background: doc.verified ? 'var(--navy)' : 'var(--mist)',
+                      color: doc.verified ? '#ffffff' : 'var(--navy)'
+                    }}
+                  >
+                    {doc.verified ? 'Verified' : 'Pending review'}
+                  </span>
+                  <button className="btn-soft" onClick={() => alert(`Downloading ${doc.name}`)}>
+                    Download
+                  </button>
+                  <button className="btn-soft" onClick={() => deleteDocument(doc.id)}>
+                    Remove
+                  </button>
                 </div>
               </div>
-            )
-          })}
-        </div>
-      ))}
-
-      <div style={{ marginTop: 24, padding: 16, background: '#EFF6FF', border: '0.5px solid #BFDBFE', borderRadius: 8 }}>
-        <div style={{ fontSize: 12, color: '#1E40AF', fontWeight: 500 }}>🔒 <strong>Private & secure</strong></div>
-        <div style={{ fontSize: 11, color: '#1E40AF', marginTop: 4 }}>
-          Files are stored in a private bucket. Only you, your NGO partner and CAREVIA admins can open them. Recruiters never see your documents.
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </Layout>
   )

@@ -1,0 +1,177 @@
+/* ============ CAREVIA fixes.css (final) ============ */
+
+/* ---- heavier text everywhere ---- */
+:root {
+    --ink2: #2C3A5E
+}
+
+body,
+body p,
+body span,
+body li,
+body td,
+body th,
+body label,
+body a,
+body input,
+body textarea,
+body select {
+    font-weight: 500 !important
+}
+
+body {
+    font-size: 13px
+}
+
+h1,
+h2,
+.cv-hero h1,
+.cv-section-title {
+    font-weight: 500 !important
+}
+
+h3,
+.cv-tile h3,
+.cv-card h3 {
+    font-weight: 600 !important
+}
+
+.cv-nav-item,
+.cv-pill,
+.cv-soft,
+.cv-link,
+.cv-badge {
+    font-weight: 600 !important
+}
+
+.cv-muted,
+.cv-tile p {
+    font-weight: 500 !important;
+    color: var(--ink2)
+}
+
+.cv-tile.dark p {
+    color: #D3DDF6 !important
+}
+
+.cv-word,
+.launch-word {
+    font-weight: 500 !important
+}
+
+/* ---- type sizes ---- */
+h1 {
+    font-size: clamp(22px, 2.1vw, 32px) !important;
+    letter-spacing: -.8px
+}
+
+h2,
+.cv-section-title {
+    font-size: clamp(16px, 1.3vw, 20px) !important;
+    margin: 12px 0 6px !important
+}
+
+h3 {
+    font-size: clamp(13px, 1vw, 14px) !important
+}
+
+.cv-hero h1 {
+    font-size: clamp(28px, 3.4vw, 52px) !important
+}
+
+.cv-muted {
+    font-size: 12px
+}
+
+.cv-nav-item {
+    font-size: 12.5px !important;
+    padding: 8px 12px !important;
+    gap: 8px !important
+}
+
+.cv-pill,
+.cv-soft,
+.cv-link {
+    font-size: 12px !important;
+    padding: 7px 14px !important
+}
+
+.cv-input {
+    font-size: 13px !important;
+    padding: 10px 14px !important
+}
+
+.cv-badge {
+    font-size: 11px !important;
+    padding: 3px 10px !important
+}
+
+/* ---- much smaller boxes ---- */
+.cv-grid {
+    gap: 10px !important;
+    margin-bottom: 6px
+}
+
+.cv-tile {
+    padding: 12px 14px !important;
+    min-height: 72px !important;
+    border-radius: 16px !important;
+    gap: 4px !important
+}
+
+.cv-tile h3 {
+    font-size: 11.5px !important
+}
+
+.cv-tile p {
+    font-size: 11px !important
+}
+
+/* every stat value the same size */
+.cv-tile :not(h3):not(p):not(svg):not(svg *):not(.cv-orb):not(.cv-stem):not(.cv-bud) {
+    font-size: clamp(18px, 1.4vw, 22px) !important;
+    line-height: 1.1 !important;
+    font-weight: 500 !important
+}
+
+.cv-card {
+    padding: 12px 14px !important;
+    border-radius: 16px !important;
+    border-top-width: 1px !important
+}
+
+.cv-card p,
+.cv-card .cv-muted {
+    font-size: 12px !important;
+    line-height: 1.35 !important
+}
+
+.cv-card h3 {
+    font-size: 13.5px !important;
+    margin: 4px 0 3px !important
+}
+
+.cv-side {
+    padding: 12px 8px !important;
+    border-radius: 20px !important;
+    margin: 10px !important
+}
+
+/* ---- gradient on the page background only ---- */
+html {
+    background: #EEF3FD
+}
+
+body {
+    background:
+        radial-gradient(900px 520px at 6% -8%, rgba(143, 170, 242, .38), transparent 62%),
+        radial-gradient(800px 480px at 100% 0%, rgba(191, 208, 250, .55), transparent 58%),
+        radial-gradient(900px 620px at 72% 112%, rgba(111, 143, 230, .22), transparent 62%),
+        linear-gradient(180deg, #F6F8FE 0%, #EBF1FD 100%);
+    background-attachment: fixed;
+}
+
+#root,
+main {
+    background: transparent !important
+}

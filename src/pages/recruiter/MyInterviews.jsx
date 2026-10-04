@@ -1,162 +1,266 @@
 import { useState } from 'react'
 import Layout from '../../components/Layout'
-import {
-  PageHeader, StatGrid, ErrorBanner, EmptyState, Loading, InterviewModal, btn, fieldInput, toLocalInput, interviewTypeLabel,
-} from '../../components/ui'
-import { useLiveQuery } from '../../lib/live'
-import { listMyInterviews, updateInterview, formatDateTime } from '../../lib/careers'
-
-const STATUS = {
-  scheduled: { bg: '#EFF6FF', color: '#2563EB', label: 'Scheduled' },
-  completed: { bg: '#F0FDF4', color: '#059669', label: 'Completed' },
-  cancelled: { bg: '#FEE2E2', color: '#DC2626', label: 'Cancelled' },
-}
 
 export default function MyInterviews() {
-  const { data, loading, error, reload, live, setData } = useLiveQuery(listMyInterviews, { tables: ['interviews'] })
+  const [interviews, setInterviews] = useState([
+    {
+      id: 'int-1',
+      survivorName: 'Meena Rajeshwari',
+      jobTitle: 'Data Entry Operator',
+      date: '2025-06-20',
+      time: '10:00 AM',
+      status: 'Scheduled',
+      videoLink: 'https://meet.google.com/abc-xyz-123',
+      notes: 'Review past experience with spreadsheet software and typing speed.',
+      interviewType: 'Virtual Video Call'
+    },
+    {
+      id: 'int-2',
+      survivorName: 'Priya Sundaram',
+      jobTitle: 'Customer Service Associate',
+      date: '2025-06-22',
+      time: '02:00 PM',
+      status: 'Scheduled',
+      videoLink: 'https://meet.google.com/def-ghi-456',
+      notes: 'Evaluate multilingual fluency and communication skills.',
+      interviewType: 'Virtual Video Call'
+    },
+    {
+      id: 'int-3',
+      survivorName: 'Divya Kumar',
+      jobTitle: 'Administrative Assistant',
+      date: '2025-06-18',
+      time: '03:30 PM',
+      status: 'Completed',
+      videoLink: 'https://meet.google.com/jkl-mno-789',
+      notes: 'Demonstrated strong organizational competencies.',
+      interviewType: 'Virtual Video Call',
+      feedback: 'Excellent cultural fit and qualified skillset.'
+    }
+  ])
+
   const [filterStatus, setFilterStatus] = useState('all')
-  const [rescheduling, setRescheduling] = useState(null)
-  const [drafts, setDrafts] = useState({})
-  const [busyId, setBusyId] = useState(null)
 
-  const interviews = data ?? []
-  const filtered = filterStatus === 'all' ? interviews : interviews.filter((i) => i.status === filterStatus)
-  const isPast = (i) => new Date(i.scheduled_at) < new Date()
+  const filtered = filterStatus === 'all' 
+    ? interviews 
+    : interviews.filter(int => int.status === filterStatus)
 
-  const patch = async (i, fields, confirmText) => {
-    if (confirmText && !window.confirm(confirmText)) return
-    setBusyId(i.id)
-    try {
-      await updateInterview(i.id, fields)
-      setData((rows) => rows?.map((r) => (r.id === i.id ? { ...r, ...fields } : r)))
-      reload()
-    } catch (err) {
-      window.alert(err.message || 'Could not update the interview.')
-    } finally {
-      setBusyId(null)
+  const upcomingCount = interviews.filter(int => int.status === 'Scheduled').length
+  const completedCount = interviews.filter(int => int.status === 'Completed').length
+
+  const cancelInterview = (interviewId) => {
+    if (window.confirm('Cancel this interview?')) {
+      setInterviews(interviews.map(int => 
+        int.id === interviewId ? { ...int, status: 'Cancelled' } : int
+      ))
     }
   }
 
-  const saveText = (i, field) => {
-    const key = `${i.id}:${field}`
-    if (drafts[key] === undefined || drafts[key] === (i[field] ?? '')) return
-    patch(i, { [field]: drafts[key].trim() || null })
-    setDrafts(({ [key]: _, ...rest }) => rest)
+  const rescheduleInterview = (interviewId) => {
+    const newDate = prompt('Enter new date (YYYY-MM-DD):')
+    const newTime = prompt('Enter new time (HH:MM AM/PM):')
+    if (newDate && newTime) {
+      setInterviews(interviews.map(int => 
+        int.id === interviewId ? { ...int, date: newDate, time: newTime } : int
+      ))
+      alert('Interview rescheduled successfully')
+    }
   }
 
-  const textArea = (i, field, placeholder) => (
-    <textarea
-      value={drafts[`${i.id}:${field}`] ?? i[field] ?? ''}
-      onChange={(e) => setDrafts((d) => ({ ...d, [`${i.id}:${field}`]: e.target.value }))}
-      onBlur={() => saveText(i, field)}
-      placeholder={placeholder}
-      style={{ ...fieldInput, fontSize: 12, minHeight: 56, resize: 'vertical' }}
-    />
-  )
+  const updateFeedback = (interviewId, feedback) => {
+    setInterviews(interviews.map(int => 
+      int.id === interviewId ? { ...int, feedback } : int
+    ))
+  }
+
+  const statItems = [
+    { label: 'Total interviews', value: interviews.length },
+    { label: 'Upcoming scheduled', value: upcomingCount },
+    { label: 'Completed rounds', value: completedCount }
+  ]
 
   return (
     <Layout>
-      <PageHeader title="📅 My Interviews" subtitle="Schedule and manage survivor interviews" live={live} />
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+          Interview management
+        </h2>
+        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+          Coordinate candidate interviews, meeting links, and feedback logs
+        </p>
+      </div>
 
-      <StatGrid stats={[
-        { label: 'Total interviews', value: interviews.length, color: '#2563EB', bg: '#EFF6FF' },
-        { label: 'Upcoming', value: interviews.filter((i) => i.status === 'scheduled' && !isPast(i)).length, color: '#D97706', bg: '#FEF3C7' },
-        { label: 'Completed', value: interviews.filter((i) => i.status === 'completed').length, color: '#059669', bg: '#F0FDF4' },
-      ]} />
+      {/* Stat Tiles */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 28 }}>
+        {statItems.map((stat, idx) => {
+          const cardClass = idx === 0 ? 'card-light' : idx % 2 === 1 ? 'card-dark' : 'card'
+          return (
+            <div key={stat.label} className={cardClass} style={{ padding: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.85, marginBottom: 12 }}>
+                {stat.label}
+              </div>
+              <div style={{ fontSize: 40, fontWeight: 300, lineHeight: 1 }}>
+                {stat.value}
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
-      <div className="card" style={{ padding: 16, marginBottom: 20 }}>
-        <select style={{ ...fieldInput, width: 'auto' }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+      {/* Filter Card */}
+      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+        <label style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+          Filter by interview status
+        </label>
+        <select 
+          className="input"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          style={{ maxWidth: 280, cursor: 'pointer' }}
+        >
           <option value="all">All interviews</option>
-          <option value="scheduled">Scheduled</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="Scheduled">Scheduled</option>
+          <option value="Completed">Completed</option>
+          <option value="Cancelled">Cancelled</option>
         </select>
       </div>
 
-      <ErrorBanner message={error} />
+      {/* Interviews List */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ color: 'var(--navy)', margin: 0 }}>
+            Scheduled sessions
+          </h3>
+          <span className="badge">
+            {filtered.length} interviews
+          </span>
+        </div>
 
-      {loading ? <Loading /> : filtered.length === 0 ? (
-        <EmptyState title="No interviews found" hint="Schedule an interview from Applicants, Search Talent or your Shortlist." />
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: 16 }}>
-          {filtered.map((i) => {
-            const st = STATUS[i.status] ?? STATUS.scheduled
-            const busy = busyId === i.id
-            const link = i.video_link && /^https?:\/\//i.test(i.video_link) ? i.video_link : null
-            return (
-              <div key={i.id} className="card" style={{ padding: 20, opacity: busy ? 0.6 : 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        {filtered.length === 0 ? (
+          <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--navy)', marginBottom: 8 }}>
+              No interviews scheduled
+            </h3>
+            <p style={{ color: 'var(--ink2)', fontSize: 14, maxWidth: 440, margin: '0 auto 20px' }}>
+              Request interviews with candidates from the talent discovery page to view them here.
+            </p>
+          </div>
+        ) : (
+          <div>
+            {filtered.map(interview => (
+              <div
+                key={interview.id}
+                style={{
+                  padding: '24px',
+                  borderBottom: '1px solid var(--line)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16
+                }}
+              >
+                {/* Header row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0C1F3F', marginBottom: 2 }}>{i.display_name}</div>
-                    <div style={{ fontSize: 12, color: '#6B7280' }}>{i.job_title ?? 'General interview'}</div>
+                    <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--navy)', marginBottom: 4 }}>
+                      {interview.survivorName}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--ink2)' }}>
+                      Target role: {interview.jobTitle} · {interview.interviewType}
+                    </div>
                   </div>
-                  <span style={{ padding: '4px 10px', background: st.bg, color: st.color, borderRadius: 6, fontSize: 10, fontWeight: 700 }}>
-                    {st.label}{i.status === 'scheduled' && isPast(i) ? ' · past' : ''}
+                  <span
+                    className="badge"
+                    style={{
+                      background: interview.status === 'Completed' ? 'var(--navy)' : 'var(--mist)',
+                      color: interview.status === 'Completed' ? '#ffffff' : 'var(--navy)'
+                    }}
+                  >
+                    {interview.status}
                   </span>
                 </div>
 
-                <div style={{ marginBottom: 14, padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0C1F3F' }}>{formatDateTime(i.scheduled_at)}</div>
-                  <div style={{ fontSize: 12, color: '#2563EB', marginTop: 2 }}>{interviewTypeLabel(i.interview_type)}</div>
-                  {i.video_link && !link && <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>{i.video_link}</div>}
-                </div>
-
-                {i.status === 'scheduled' && link && (
-                  <a href={link} target="_blank" rel="noopener noreferrer" style={{
-                    display: 'block', padding: '9px 12px', background: '#EFF6FF', color: '#2563EB', textDecoration: 'none',
-                    borderRadius: 8, fontSize: 12, fontWeight: 600, textAlign: 'center', border: '0.5px solid #BFDBFE', marginBottom: 14,
-                  }}>🔗 Join meeting</a>
-                )}
-
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, marginBottom: 6 }}>Private notes</div>
-                  {textArea(i, 'notes', 'Questions to ask, things to check…')}
-                </div>
-
-                {i.status === 'completed' && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, marginBottom: 6 }}>Feedback</div>
-                    {textArea(i, 'feedback', 'How did it go?')}
+                {/* Session Details */}
+                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', background: 'var(--bg)', padding: '12px 18px', borderRadius: 'var(--r-input)', border: '1px solid var(--line)', fontSize: 13 }}>
+                  <div>
+                    <span style={{ color: 'var(--ink2)' }}>Date: </span>
+                    <strong style={{ color: 'var(--ink)' }}>{interview.date}</strong>
                   </div>
-                )}
+                  <div>
+                    <span style={{ color: 'var(--ink2)' }}>Time: </span>
+                    <strong style={{ color: 'var(--royal)' }}>{interview.time}</strong>
+                  </div>
+                  {interview.status === 'Scheduled' && (
+                    <div>
+                      <a
+                        href={interview.videoLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--royal)', textDecoration: 'none', fontWeight: 500 }}
+                      >
+                        Join video meeting →
+                      </a>
+                    </div>
+                  )}
+                </div>
 
-                {i.status === 'scheduled' && (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button disabled={busy} style={btn('success', { flex: 1 })} onClick={() => patch(i, { status: 'completed' })}>Mark done</button>
-                    <button disabled={busy} style={btn('ghost', { flex: 1 })} onClick={() => setRescheduling(i)}>Reschedule</button>
-                    <button disabled={busy} style={btn('danger', { flex: 1 })}
-                      onClick={() => patch(i, { status: 'cancelled' }, `Cancel the interview with ${i.display_name}?`)}>Cancel</button>
+                {/* Notes & Feedback */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+                  <div>
+                    <label style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+                      Interview notes
+                    </label>
+                    <textarea
+                      className="input"
+                      value={interview.notes || ''}
+                      onChange={(e) => {
+                        setInterviews(interviews.map(int => 
+                          int.id === interview.id ? { ...int, notes: e.target.value } : int
+                        ))
+                      }}
+                      rows={2}
+                      style={{ resize: 'none', fontSize: 13 }}
+                    />
+                  </div>
+
+                  {interview.status === 'Completed' && (
+                    <div>
+                      <label style={{ fontSize: 12, color: 'var(--ink2)', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+                        Post-interview feedback
+                      </label>
+                      <textarea
+                        className="input"
+                        value={interview.feedback || ''}
+                        onChange={(e) => updateFeedback(interview.id, e.target.value)}
+                        placeholder="Add performance feedback..."
+                        rows={2}
+                        style={{ resize: 'none', fontSize: 13 }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Action buttons */}
+                {interview.status === 'Scheduled' && (
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button 
+                      className="btn-soft"
+                      onClick={() => rescheduleInterview(interview.id)}
+                    >
+                      Reschedule session
+                    </button>
+                    <button 
+                      className="btn-soft"
+                      onClick={() => cancelInterview(interview.id)}
+                    >
+                      Cancel interview
+                    </button>
                   </div>
                 )}
               </div>
-            )
-          })}
-        </div>
-      )}
-
-      {rescheduling && (
-        <InterviewModal
-          title="Reschedule interview"
-          candidateName={rescheduling.display_name}
-          initial={{
-            when: toLocalInput(rescheduling.scheduled_at),
-            interviewType: rescheduling.interview_type,
-            videoLink: rescheduling.video_link ?? '',
-            notes: rescheduling.notes ?? '',
-          }}
-          onClose={() => setRescheduling(null)}
-          onSubmit={async (v) => {
-            if (new Date(v.scheduledAt) < new Date()) throw new Error('Pick a date and time in the future.')
-            await updateInterview(rescheduling.id, {
-              scheduled_at: v.scheduledAt,
-              interview_type: v.interviewType,
-              video_link: v.videoLink || null,
-              notes: v.notes || null,
-            })
-            reload()
-          }}
-        />
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </Layout>
   )
 }

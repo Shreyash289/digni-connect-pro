@@ -1,115 +1,117 @@
 import { useState } from 'react'
 import Layout from '../../components/Layout'
-import { PageHeader, ErrorBanner, EmptyState, Loading, Tag, btn, fieldInput, formatDate } from '../../components/ui'
-import { NgoGate, SurvivorFormModal } from '../../components/ngo'
-import { useLiveQuery } from '../../lib/live'
-import { listNgoSurvivors, SURVIVOR_STATUS } from '../../lib/careers'
 
 export default function ManageSurvivors() {
+  const [survivors, setSurvivors] = useState([])
+
+  const approveSurvivor = (id) => {
+    setSurvivors(survivors.map(s => s.id === id ? { ...s, status: 'Approved' } : s))
+  }
+
+  const rejectSurvivor = (id) => {
+    setSurvivors(survivors.filter(s => s.id !== id))
+  }
+
   return (
     <Layout>
-      <NgoGate>{() => <SurvivorList />}</NgoGate>
-    </Layout>
-  )
-}
-
-function SurvivorList() {
-  const { data, loading, error, reload, live } = useLiveQuery(listNgoSurvivors, {
-    tables: ['survivors', 'job_applications', 'survivor_documents'],
-  })
-  const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [editing, setEditing] = useState(null) // null | 'new' | survivor
-
-  const survivors = data ?? []
-  const q = query.trim().toLowerCase()
-  const filtered = survivors.filter((s) =>
-    (statusFilter === 'all' || s.status === statusFilter) &&
-    (!q || [s.full_name, s.anonymous_id, s.city, s.state, ...(s.skills ?? [])].some((v) => v?.toLowerCase().includes(q))))
-
-  return (
-    <>
-      <PageHeader
-        title="👥 Manage Survivors"
-        subtitle="Add the survivors your organisation supports and keep their profiles up to date"
-        live={live}
-        action={<button style={btn('primary', { padding: '9px 16px', fontSize: 13 })} onClick={() => setEditing('new')}>➕ Add New Survivor</button>}
-      />
-
-      <div className="card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <input style={{ ...fieldInput, flex: '1 1 240px' }} placeholder="🔍  Search by name, ID, city or skill" value={query} onChange={(e) => setQuery(e.target.value)} />
-        <select style={{ ...fieldInput, width: 'auto' }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="all">All statuses</option>
-          {Object.entries(SURVIVOR_STATUS).map(([v, s]) => <option key={v} value={v}>{s.label}</option>)}
-        </select>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+            Manage candidate roster
+          </h2>
+          <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+            Review registrations, verify intake documentation, and update placement status
+          </p>
+        </div>
+        <button
+          className="btn-pill"
+          onClick={() => alert('Add candidate intake form triggered')}
+        >
+          Add candidate
+        </button>
       </div>
 
-      <ErrorBanner message={error} />
-
-      {loading ? <Loading /> : filtered.length === 0 ? (
-        <EmptyState
-          title={survivors.length ? 'No survivors match this filter' : 'No survivors added yet'}
-          hint={survivors.length ? null : 'Add the survivors your organisation supports. CAREVIA verifies each profile.'}
-          action={!survivors.length && <button style={btn('primary')} onClick={() => setEditing('new')}>Add a survivor</button>}
-        />
+      {survivors.length === 0 ? (
+        <div className="card" style={{ padding: '64px 24px', textAlign: 'center' }}>
+          <h3 style={{ color: 'var(--navy)', marginBottom: 8 }}>
+            No candidates registered yet
+          </h3>
+          <p style={{ color: 'var(--ink2)', fontSize: 14, maxWidth: 440, margin: '0 auto 24px' }}>
+            New survivor intakes submitted by your regional partners will appear here for verification.
+          </p>
+          <button
+            className="btn-pill"
+            onClick={() => alert('Add candidate intake form triggered')}
+          >
+            Register new candidate
+          </button>
+        </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#F9FAFB', borderBottom: '0.5px solid #E5E7EB' }}>
-                  {['Name', 'Skills', 'Profile', 'Recruiters', 'Activity', 'Status', ''].map((h) => (
-                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((s) => {
-                  const st = SURVIVOR_STATUS[s.status] ?? SURVIVOR_STATUS.submitted
-                  return (
-                    <tr key={s.id} style={{ borderBottom: '0.5px solid #E5E7EB' }}>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0C1F3F' }}>{s.full_name || '—'}</div>
-                        <div style={{ fontSize: 11, color: '#9CA3AF' }}>{s.anonymous_id} · added {formatDate(s.created_at)}{s.has_login ? ' · has own login' : ''}</div>
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxWidth: 220 }}>
-                          {(s.skills ?? []).slice(0, 3).map((x) => <Tag key={x}>{x}</Tag>)}
-                          {!(s.skills ?? []).length && <span style={{ fontSize: 11, color: '#9CA3AF' }}>—</span>}
-                        </div>
-                      </td>
-                      <td style={{ padding: '12px 16px', minWidth: 110 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 }}>{s.profile_completion}%</div>
-                        <div className="progress-track" style={{ height: 4 }}><div className="progress-fill" style={{ width: `${s.profile_completion}%` }} /></div>
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: s.consent_share_with_recruiters ? '#059669' : '#9CA3AF' }}>
-                        {s.consent_share_with_recruiters ? '✓ Visible' : 'Hidden'}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#6B7280', whiteSpace: 'nowrap' }}>
-                        {s.applications} applied · {s.interviews} interviews
-                        {s.pending_documents > 0 && <div style={{ color: '#D97706' }}>{s.pending_documents} doc(s) to verify</div>}
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{ padding: '4px 10px', background: st.bg, color: st.color, borderRadius: 6, fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap' }}>{st.label}</span>
-                        {s.status === 'rejected' && s.rejection_reason && (
-                          <div style={{ fontSize: 11, color: '#DC2626', marginTop: 4, maxWidth: 180 }}>{s.rejection_reason}</div>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <button style={btn('ghost')} onClick={() => setEditing(s)}>Edit</button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ color: 'var(--navy)', margin: 0 }}>
+              Registered candidates
+            </h3>
+            <span className="badge">
+              {survivors.length} total
+            </span>
+          </div>
+
+          <div>
+            {survivors.map(survivor => (
+              <div
+                key={survivor.id}
+                style={{
+                  padding: '18px 24px',
+                  borderBottom: '1px solid var(--line)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 16,
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--navy)', marginBottom: 2 }}>
+                    {survivor.name}
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--ink2)' }}>
+                    {survivor.email}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className="badge">
+                    {survivor.status}
+                  </span>
+
+                  {survivor.status === 'Pending' ? (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="btn-pill"
+                        style={{ padding: '8px 16px', fontSize: 12 }}
+                        onClick={() => approveSurvivor(survivor.id)}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="btn-soft"
+                        onClick={() => rejectSurvivor(survivor.id)}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <button className="btn-soft" onClick={() => alert(`Reviewing ${survivor.name}`)}>
+                      View details
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
-
-      {editing && (
-        <SurvivorFormModal survivor={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSaved={reload} />
-      )}
-    </>
+    </Layout>
   )
 }

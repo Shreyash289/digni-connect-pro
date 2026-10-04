@@ -1,79 +1,116 @@
+import { useState } from 'react'
 import Layout from '../../components/Layout'
-import { PageHeader, StatGrid, ErrorBanner, EmptyState, Loading } from '../../components/ui'
-import { NgoGate } from '../../components/ngo'
-import { useLiveQuery } from '../../lib/live'
-import { listNgoSurvivors, JOURNEY, journeyStage } from '../../lib/careers'
+
+const STAGES = [
+  'Profile Created',
+  'Resume Ready',
+  'Interview Ready',
+  'Applied',
+  'Placed'
+]
 
 export default function ProgressTracking() {
+  const [survivors] = useState([
+    { id: 1, name: 'Meena Rajeshwari', stage: 5, targetRole: 'Data Entry Operator' },
+    { id: 2, name: 'Priya Sundaram', stage: 3, targetRole: 'Customer Service' },
+    { id: 3, name: 'Divya Kumar', stage: 4, targetRole: 'Administrative Assistant' },
+  ])
+
   return (
     <Layout>
-      <NgoGate>{() => <Progress />}</NgoGate>
-    </Layout>
-  )
-}
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+          Progress tracking
+        </h2>
+        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+          Monitor candidate milestones across the five-stage vocational pathway
+        </p>
+      </div>
 
-function Progress() {
-  const { data, loading, error, live } = useLiveQuery(listNgoSurvivors, {
-    tables: ['survivors', 'job_applications', 'interviews'],
-  })
-  const survivors = (data ?? []).map((s) => ({
-    ...s,
-    stage: journeyStage({
-      completion: s.profile_completion, applications: s.applications, interviews: s.interviews, offers: s.offers, hired: s.hired,
-    }),
-  })).sort((a, b) => b.stage - a.stage)
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {survivors.map(survivor => {
+          const currentStageName = STAGES[survivor.stage - 1] || 'In Progress'
+          const completionPercentage = Math.round((survivor.stage / STAGES.length) * 100)
 
-  const atStage = (n) => survivors.filter((s) => s.stage === n).length
-
-  return (
-    <>
-      <PageHeader title="📈 Progress Tracking" subtitle="Each survivor's journey, updated automatically from their applications and interviews" live={live} />
-
-      <StatGrid stats={[
-        { label: 'Getting started', value: atStage(1) + atStage(2), color: '#6B7280', bg: '#F3F4F6' },
-        { label: 'Applying', value: atStage(3), color: '#2563EB', bg: '#EFF6FF' },
-        { label: 'Interviewing', value: atStage(4), color: '#0D9488', bg: '#F0FDFA' },
-        { label: 'Offer received', value: atStage(5), color: '#D97706', bg: '#FFFBEB' },
-        { label: 'Employed', value: atStage(6), color: '#059669', bg: '#F0FDF4' },
-      ]} />
-
-      <ErrorBanner message={error} />
-
-      {loading ? <Loading /> : survivors.length === 0 ? (
-        <EmptyState title="No survivors to track yet" hint="Add survivors under Manage Survivors. Their progress appears here automatically." />
-      ) : survivors.map((s) => (
-        <div key={s.id} className="card" style={{ marginBottom: 16, padding: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#0C1F3F', marginBottom: 2 }}>{s.full_name || s.anonymous_id}</div>
-              <div style={{ fontSize: 12, color: '#6B7280' }}>Current stage: <strong style={{ color: '#2563EB' }}>{JOURNEY[s.stage - 1]}</strong></div>
-            </div>
-            <div style={{ fontSize: 12, color: '#6B7280', textAlign: 'right' }}>
-              Profile {s.profile_completion}% · {s.applications} application{s.applications === 1 ? '' : 's'} · {s.interviews} interview{s.interviews === 1 ? '' : 's'}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            {JOURNEY.map((label, idx) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', flex: idx < JOURNEY.length - 1 ? 1 : 'none' }}>
-                <div title={label} style={{
-                  width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                  background: idx < s.stage ? '#059669' : '#E5E7EB', color: idx < s.stage ? '#fff' : '#9CA3AF',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700,
-                }}>
-                  {idx < s.stage ? '✓' : idx + 1}
+          return (
+            <div key={survivor.id} className="card" style={{ padding: 28 }}>
+              {/* Candidate info header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 500, color: 'var(--navy)', marginBottom: 4 }}>
+                    {survivor.name}
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--ink2)' }}>
+                    Target role: {survivor.targetRole}
+                  </div>
                 </div>
-                {idx < JOURNEY.length - 1 && (
-                  <div style={{ flex: 1, height: 2, background: idx < s.stage - 1 ? '#059669' : '#E5E7EB', margin: '0 4px' }} />
-                )}
+
+                <div style={{ textAlign: 'right' }}>
+                  <span className="badge" style={{ fontSize: 12, padding: '5px 14px' }}>
+                    Stage {survivor.stage} of 5: {currentStageName}
+                  </span>
+                </div>
               </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-            {JOURNEY.map((label) => <span key={label} style={{ fontSize: 10, color: '#9CA3AF', width: 60, textAlign: 'center' }}>{label}</span>)}
-          </div>
-        </div>
-      ))}
-    </>
+
+              {/* Horizontal Pill Stepper */}
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${STAGES.length}, 1fr)`, gap: 10, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
+                {STAGES.map((stage, idx) => {
+                  const stageNum = idx + 1
+                  const isCompleted = stageNum < survivor.stage
+                  const isCurrent = stageNum === survivor.stage
+                  const isUpcoming = stageNum > survivor.stage
+
+                  const bgColor = isCompleted ? 'var(--navy)' : isCurrent ? 'var(--royal)' : 'var(--mist)'
+                  const textColor = isCompleted || isCurrent ? '#ffffff' : 'var(--ink2)'
+
+                  return (
+                    <div
+                      key={stage}
+                      style={{
+                        background: bgColor,
+                        color: textColor,
+                        padding: '10px 14px',
+                        borderRadius: 'var(--r-pill)',
+                        textAlign: 'center',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        minWidth: 120,
+                        transition: 'background 0.2s'
+                      }}
+                    >
+                      <span>{isCompleted ? '✓' : stageNum}.</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stage}</span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Progress bar */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink2)', marginBottom: 6 }}>
+                  <span>Pathway completion</span>
+                  <span style={{ fontWeight: 500, color: 'var(--navy)' }}>{completionPercentage}%</span>
+                </div>
+                <div style={{ height: 8, background: 'var(--mist)', borderRadius: 'var(--r-pill)', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${completionPercentage}%`,
+                      background: 'var(--royal)',
+                      borderRadius: 'var(--r-pill)',
+                      transition: 'width 0.4s ease'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </Layout>
   )
 }

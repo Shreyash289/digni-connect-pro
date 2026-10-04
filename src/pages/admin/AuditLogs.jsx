@@ -1,117 +1,92 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import Layout from '../../components/Layout'
-import { LiveBadge } from '../../components/ui'
-import { listAuditLogs, subscribeToTables, describeAuditAction, formatDateTime } from '../../lib/admin'
-
-const th = { padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }
 
 export default function AuditLogs() {
-  const [logs, setLogs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [logs] = useState([
+    { id: 1, user: 'Admin System', action: 'Approved survivor profile', target: 'Meena Rajeshwari', timestamp: '2025-06-15 10:30 AM', status: 'Success' },
+    { id: 2, user: 'Recruiter Co', action: 'Viewed candidate profile', target: 'Priya Sundaram', timestamp: '2025-06-15 09:45 AM', status: 'Success' },
+    { id: 3, user: 'Asha Foundation', action: 'Added candidate intake', target: 'Divya Kumar', timestamp: '2025-06-14 04:20 PM', status: 'Success' },
+    { id: 4, user: 'Admin System', action: 'Exported quarterly report', target: 'Q2 Compliance Summary', timestamp: '2025-06-14 03:15 PM', status: 'Success' },
+    { id: 5, user: 'Recruiter Co', action: 'Authentication attempt', target: 'Session token validation', timestamp: '2025-06-13 08:00 PM', status: 'Failed' },
+    { id: 6, user: 'Admin System', action: 'Updated security permissions', target: 'Recruiter role policy', timestamp: '2025-06-13 02:30 PM', status: 'Success' },
+  ])
+
   const [filter, setFilter] = useState('all')
-  const [live, setLive] = useState(false)
 
-  const load = useCallback(async () => {
-    try {
-      setLogs(await listAuditLogs(500))
-      setError('')
-    } catch (err) {
-      setError(err.message || 'Could not load audit logs.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-    return subscribeToTables('admin-audit-logs', ['audit_logs'], load,
-      (status) => setLive(status === 'SUBSCRIBED'))
-  }, [load])
-
-  const filtered = filter === 'all' ? logs : logs.filter((l) => l.status === filter)
+  const filtered = filter === 'all' ? logs : logs.filter(l => l.status === filter)
 
   return (
     <Layout>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>
-            📋 Audit Logs
-          </h1>
-          <p style={{ fontSize: 14, color: '#6B7280' }}>Track all user activities and system changes</p>
-        </div>
-        <LiveBadge live={live} />
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
+          System audit logs
+        </h2>
+        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
+          Immutable compliance record of user actions, verifications, and system events
+        </p>
       </div>
 
-      {/* Filter */}
-      <div className="card" style={{ padding: 16, marginBottom: 20 }}>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{
-          padding: '8px 12px',
-          borderRadius: 6,
-          border: '0.5px solid #E5E7EB',
-          fontSize: 13,
-          fontFamily: 'Inter'
-        }}>
-          <option value="all">All Activities</option>
-          <option value="success">Success</option>
-          <option value="failed">Failed</option>
-        </select>
+      {/* Filter Card */}
+      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>
+            Filter by status:
+          </label>
+          <select 
+            className="input"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            style={{ maxWidth: 200, cursor: 'pointer' }}
+          >
+            <option value="all">All activities</option>
+            <option value="Success">Success</option>
+            <option value="Failed">Failed</option>
+          </select>
+        </div>
       </div>
 
-      {error && (
-        <div style={{ marginBottom: 16, padding: '10px 13px', background: '#FEF2F2', border: '0.5px solid #FECACA', borderRadius: 6, fontSize: 13, color: '#B91C1C' }}>
-          {error}
-        </div>
-      )}
-
-      {/* Logs Table */}
+      {/* Compact table inside .card */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ color: 'var(--navy)', margin: 0 }}>
+            Activity audit record
+          </h3>
+          <span className="badge">
+            {filtered.length} entries
+          </span>
+        </div>
+
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font)', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#F9FAFB', borderBottom: '0.5px solid #E5E7EB' }}>
-                <th style={th}>User</th>
-                <th style={th}>Action</th>
-                <th style={th}>Target</th>
-                <th style={th}>Timestamp</th>
-                <th style={th}>Status</th>
+              <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontWeight: 500, color: 'var(--navy)' }}>Actor</th>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontWeight: 500, color: 'var(--navy)' }}>Event Action</th>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontWeight: 500, color: 'var(--navy)' }}>Target Resource</th>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontWeight: 500, color: 'var(--navy)' }}>Timestamp</th>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontWeight: 500, color: 'var(--navy)' }}>Result</th>
               </tr>
             </thead>
             <tbody>
-              {loading && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', fontSize: 13, color: '#6B7280' }}>Loading activity…</td></tr>
-              )}
-              {!loading && filtered.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', fontSize: 13, color: '#6B7280' }}>No activity recorded yet.</td></tr>
-              )}
-              {filtered.map((log) => {
-                const ok = log.status !== 'failed'
-                return (
-                  <tr key={log.id} style={{ borderBottom: '0.5px solid #E5E7EB' }}>
-                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: '#0C1F3F' }}>
-                      {log.actor_name}
-                      {log.actor_email && log.actor_email !== log.actor_name && (
-                        <div style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF' }}>{log.actor_email}</div>
-                      )}
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#6B7280' }}>{describeAuditAction(log)}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#6B7280' }}>{log.target_label ?? '—'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#6B7280' }}>{formatDateTime(log.created_at)}</td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        padding: '4px 10px',
-                        background: ok ? '#D1FAE5' : '#FEE2E2',
-                        color: ok ? '#059669' : '#DC2626',
-                        borderRadius: 6,
-                        fontSize: 10,
-                        fontWeight: 600
-                      }}>
-                        {ok ? 'Success' : 'Failed'}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
+              {filtered.map(log => (
+                <tr key={log.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                  <td style={{ padding: '14px 20px', fontWeight: 500, color: 'var(--navy)' }}>{log.user}</td>
+                  <td style={{ padding: '14px 20px', color: 'var(--ink)' }}>{log.action}</td>
+                  <td style={{ padding: '14px 20px', color: 'var(--ink)' }}>{log.target}</td>
+                  <td style={{ padding: '14px 20px', color: 'var(--ink2)' }}>{log.timestamp}</td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <span
+                      className="badge"
+                      style={{
+                        background: log.status === 'Success' ? 'var(--mist)' : 'var(--mist)',
+                        color: log.status === 'Success' ? 'var(--navy)' : 'var(--ink2)'
+                      }}
+                    >
+                      {log.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

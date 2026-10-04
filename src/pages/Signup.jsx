@@ -1,14 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { supabase } from '../integrations/supabase/client'
-import { resolveHomeAfterAuth } from '../lib/roles'
-import { authErrorMessage } from '../lib/auth-errors'
-
-const ROLE_OPTIONS = [
-  { value: 'survivor', label: 'Survivor looking for employment' },
-  { value: 'recruiter', label: 'Recruiter / Company' },
-  { value: 'ngo_partner', label: 'NGO Partner' },
-]
+import logoNavy from '../assets/carevia-logo-navy.png'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -16,265 +8,210 @@ export default function Signup() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'survivor',
-    companyName: '',
+    role: 'survivor'
   })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [checkEmailMsg, setCheckEmailMsg] = useState(false)
+  const [step, setStep] = useState('email') // 'email' or 'verify'
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
   }
 
-  const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email)
+  const isValidEmail = (email) => {
+    return email.includes('@') && email.includes('.')
+  }
 
-  const canSubmit =
-    formData.email &&
-    isValidEmail(formData.email) &&
-    formData.password.length >= 8 &&
-    formData.password === formData.confirmPassword &&
-    (formData.role !== 'recruiter' || formData.companyName.trim().length > 0)
-
-  const handleSignup = async () => {
+  const handleRequestOTP = () => {
     if (!formData.email || !isValidEmail(formData.email)) {
-      setError('Please enter a valid email')
+      alert('Please enter a valid email')
       return
     }
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters')
-      return
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-    if (formData.role === 'recruiter' && !formData.companyName.trim()) {
-      setError('Please enter your company name')
-      return
-    }
+    localStorage.setItem('tempEmail', formData.email)
+    setStep('verify')
+  }
 
-    setError('')
-    setLoading(true)
-    try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          // Read by the assign_signup_role DB trigger, so the role sticks even
-          // when email confirmation means there's no session yet
-          data: {
-            signup_role: formData.role,
-            ...(formData.role === 'recruiter' ? { company_name: formData.companyName.trim() } : {}),
-          },
-        },
-      })
-
-      if (signUpError) {
-        setError(authErrorMessage(signUpError))
-        return
-      }
-
-      if (!data.session) {
-        // Email confirmation is required before a session is issued. The role
-        // is already saved on the account and applied automatically.
-        setCheckEmailMsg(true)
-        return
-      }
-
-      navigate(await resolveHomeAfterAuth())
-    } catch (err) {
-      setError(authErrorMessage(err, 'Something went wrong creating your account.'))
-    } finally {
-      setLoading(false)
-    }
+  const handleVerifyOTP = () => {
+    // Mock OTP verification
+    localStorage.setItem('email', formData.email)
+    localStorage.setItem('role', formData.role)
+    localStorage.setItem('isLoggedIn', 'true')
+    alert('✅ Signup successful! Welcome to CAREVIA')
+    navigate('/select-role')
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#FAF9F6' }}>
-      <div style={{
-        flex: 1, background: '#0C1F3F', color: '#fff', padding: 60, display: 'flex',
-        flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{ position: 'relative', zIndex: 10 }}>
-          <div style={{
-            width: 70, height: 70, borderRadius: 14, background: '#2563EB', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', fontSize: 36, fontWeight: 800,
-            marginBottom: 20, fontFamily: 'Plus Jakarta Sans',
-          }}>
-            C
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg)',
+        color: 'var(--ink)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '32px 16px',
+        position: 'relative'
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 480 }}>
+        {/* HERO PANEL */}
+        <div
+          style={{
+            borderRadius: 'var(--r-hero)',
+            background: 'var(--grad-hero)',
+            color: 'var(--navy)',
+            padding: '36px 28px',
+            textAlign: 'center',
+            marginBottom: 20,
+            border: '1px solid var(--line)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
+            <img
+              src={logoNavy}
+              alt="CareVia Logo"
+              style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+            />
+            <span style={{ fontWeight: 500, fontSize: 18, color: 'var(--navy)', letterSpacing: '-0.3px' }}>
+              CAREVIA
+            </span>
           </div>
-          <h1 style={{ fontSize: 32, fontWeight: 800, fontFamily: 'Plus Jakarta Sans', marginBottom: 6 }}>CAREVIA</h1>
-          <p style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginBottom: 40, fontWeight: 500 }}>
-            Survivor Repository
+          <h1
+            style={{
+              fontSize: 'clamp(32px, 6vw, 44px)',
+              fontWeight: 300,
+              lineHeight: 1.1,
+              letterSpacing: '-1.2px',
+              marginBottom: 8,
+              color: 'var(--navy)'
+            }}
+          >
+            Where careers begin again
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--ink2)', margin: 0, fontWeight: 400 }}>
+            Join our inclusive community and begin your pathway to verified employment
           </p>
-          <div style={{ maxWidth: 320, marginBottom: 40 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.5, marginBottom: 12 }}>
-              Join CAREVIA Today
-            </div>
-            <div style={{ fontSize: 11, lineHeight: 1.5, color: 'rgba(255,255,255,0.7)' }}>
-              Create your account and start your journey to employment
-            </div>
-          </div>
         </div>
-      </div>
 
-      <div style={{ flex: 1, padding: 60, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ maxWidth: 360, margin: '0 auto', width: '100%' }}>
-          <div style={{ marginBottom: 28 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 6 }}>
-              Create Account
-            </h2>
-            <p style={{ fontSize: 12, color: '#6B7280' }}>Join our community</p>
+        {/* FORM CARD */}
+        <div className="card" style={{ padding: '32px' }}>
+          <div style={{ marginBottom: 24, textAlign: 'center' }}>
+            <h3 style={{ fontSize: 20, fontWeight: 500, color: 'var(--navy)', marginBottom: 4 }}>
+              {step === 'email' ? 'Create an account' : 'Verify email'}
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--ink2)', margin: 0 }}>
+              {step === 'email' ? 'Select your role and get started' : `Verification code sent to ${formData.email}`}
+            </p>
           </div>
 
-          {error && (
-            <div style={{ marginBottom: 16, padding: '10px 13px', background: '#FEF2F2', border: '0.5px solid #FECACA', borderRadius: 6, fontSize: 12, color: '#B91C1C' }}>
-              {error}
-            </div>
-          )}
-
-          {checkEmailMsg ? (
-            <div style={{ padding: 16, background: '#F0FDF4', border: '0.5px solid #BBF7D0', borderRadius: 6 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#166534', marginBottom: 6 }}>
-                ✓ Account created
-              </div>
-              <div style={{ fontSize: 12, color: '#166534', lineHeight: 1.5, marginBottom: 12 }}>
-                This project requires confirming your email before signing in. Check your inbox (and spam folder)
-                for a confirmation link, then come back and sign in with your new password.
-              </div>
-              <Link to="/login" style={{ fontSize: 12, fontWeight: 600, color: '#2563EB', textDecoration: 'none' }}>
-                Go to Sign In →
-              </Link>
-            </div>
-          ) : (
+          {step === 'email' && (
             <>
               <div style={{ marginBottom: 18 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
-                  Email Address
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 8 }}>
+                  Email address
                 </label>
                 <input
+                  className="input"
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="example@gmail.com"
-                  autoComplete="email"
-                  style={{
-                    width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
-                    fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box',
-                  }}
+                  placeholder="name@example.com"
                 />
               </div>
 
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="At least 8 characters"
-                  autoComplete="new-password"
-                  style={{
-                    width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
-                    fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  placeholder="Re-enter your password"
-                  autoComplete="new-password"
-                  style={{
-                    width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
-                    fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
-                  I am a...
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 8 }}>
+                  I am registering as a
                 </label>
                 <select
+                  className="input"
                   name="role"
                   value={formData.role}
                   onChange={handleInputChange}
-                  style={{
-                    width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
-                    fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box',
-                  }}
+                  style={{ cursor: 'pointer' }}
                 >
-                  {ROLE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
+                  <option value="survivor">Survivor / Job Seeker</option>
+                  <option value="recruiter">Recruiter / Employer</option>
+                  <option value="ngo">NGO / Support Partner</option>
                 </select>
               </div>
 
-              {formData.role === 'recruiter' && (
-                <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 7 }}>
-                    Company Name
-                  </label>
-                  <input
-                    type="text"
-                    name="companyName"
-                    value={formData.companyName}
-                    onChange={handleInputChange}
-                    placeholder="Acme Inc."
-                    style={{
-                      width: '100%', padding: '11px 13px', border: '0.5px solid #E5E7EB', borderRadius: 6,
-                      fontSize: 13, fontFamily: 'Inter', boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-              )}
-
               <button
-                onClick={handleSignup}
-                disabled={loading || !canSubmit}
+                onClick={handleRequestOTP}
+                disabled={!formData.email || !isValidEmail(formData.email)}
+                className="btn-pill"
                 style={{
-                  width: '100%', padding: '11px 13px',
-                  background: (!loading && canSubmit) ? '#2563EB' : '#D1D5DB',
-                  color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
-                  cursor: (!loading && canSubmit) ? 'pointer' : 'not-allowed',
-                  marginBottom: 18, fontFamily: 'Inter',
+                  width: '100%',
+                  padding: '13px',
+                  fontSize: 14,
+                  opacity: (!formData.email || !isValidEmail(formData.email)) ? 0.6 : 1,
+                  cursor: (!formData.email || !isValidEmail(formData.email)) ? 'not-allowed' : 'pointer',
+                  marginBottom: 20
                 }}
               >
-                {loading ? 'Creating account…' : 'Create Account →'}
+                Send verification code
               </button>
 
-              <div style={{ padding: 14, background: '#EFF6FF', border: '0.5px solid #BFDBFE', borderRadius: 6, marginBottom: 18 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#1E40AF', marginBottom: 8 }}>
-                  🔒 Your data is secure
-                </div>
-                <div style={{ fontSize: 10, color: '#1E40AF', lineHeight: 1.4 }}>
-                  We protect survivor privacy with encryption and verified access controls
-                </div>
-              </div>
-
-              <div style={{ textAlign: 'center', fontSize: 12, color: '#6B7280' }}>
-                Already have an account? <Link to="/login" style={{ color: '#2563EB', textDecoration: 'none', fontWeight: 600 }}>Sign In</Link>
+              <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink2)' }}>
+                Already have an account?{' '}
+                <Link to="/login" style={{ color: 'var(--royal)', textDecoration: 'none', fontWeight: 500 }}>
+                  Sign in
+                </Link>
               </div>
             </>
           )}
 
-          <div style={{ marginTop: 20, paddingTop: 14, borderTop: '0.5px solid #E5E7EB', fontSize: 9, color: '#9CA3AF', textAlign: 'center' }}>
-            🔒 Your privacy is protected
-          </div>
+          {step === 'verify' && (
+            <>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 8 }}>
+                  6-digit verification code
+                </label>
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="000000"
+                  maxLength="6"
+                  style={{
+                    textAlign: 'center',
+                    fontSize: 20,
+                    letterSpacing: '0.3em'
+                  }}
+                />
+              </div>
+
+              <button
+                onClick={handleVerifyOTP}
+                className="btn-pill"
+                style={{
+                  width: '100%',
+                  padding: '13px',
+                  fontSize: 14,
+                  marginBottom: 12
+                }}
+              >
+                Verify & create account
+              </button>
+
+              <button
+                onClick={() => setStep('email')}
+                className="btn-soft"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  textAlign: 'center',
+                  fontSize: 13
+                }}
+              >
+                Back to details
+              </button>
+            </>
+          )}
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: 'var(--ink2)' }}>
+          Your privacy and personal information are protected by encrypted protocols
         </div>
       </div>
     </div>
