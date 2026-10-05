@@ -1,42 +1,104 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { supabase } from '../integrations/supabase/client'
+import { resolveHomeAfterAuth } from '../lib/roles'
+import { authErrorMessage } from '../lib/auth-errors'
 import logoNavy from '../assets/carevia-logo-navy.png'
+
+const RESEND_SECONDS = 60
+// The form uses "ngo"; the database role is "ngo_partner"
+const DB_ROLE = { survivor: 'survivor', recruiter: 'recruiter', ngo: 'ngo_partner' }
 
 export default function Signup() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'survivor'
+    role: 'survivor',
+    companyName: '',
   })
+  const [code, setCode] = useState('')
   const [step, setStep] = useState('email') // 'email' or 'verify'
+  const [loading, setLoading] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const [message, setMessage] = useState(null)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
   }
 
-  const isValidEmail = (email) => {
-    return email.includes('@') && email.includes('.')
-  }
+  const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email)
+  const cleanEmail = formData.email.trim().toLowerCase()
+  const needsCompany = formData.role === 'recruiter'
+  const canSend = isValidEmail(cleanEmail) && (!needsCompany || formData.companyName.trim().length > 0)
 
-  const handleRequestOTP = () => {
-    if (!formData.email || !isValidEmail(formData.email)) {
-      alert('Please enter a valid email')
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) navigate(await resolveHomeAfterAuth(), { replace: true })
+    })
+  }, [navigate])
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldown])
+
+  const handleRequestOTP = async () => {
+    if (!canSend) {
+      setMessage({ type: 'error', text: needsCompany && !formData.companyName.trim() ? 'Please enter your company name.' : 'Please enter a valid email address.' })
       return
     }
-    localStorage.setItem('tempEmail', formData.email)
-    setStep('verify')
+    setLoading(true)
+    setMessage(null)
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          shouldCreateUser: true,
+          // Read by the assign_signup_role trigger: the account gets this role
+          // automatically, so the user is never asked to pick it again.
+          data: {
+            signup_role: DB_ROLE[formData.role],
+            ...(needsCompany ? { company_name: formData.companyName.trim() } : {}),
+          },
+        },
+      })
+      if (error) {
+        setMessage({ type: 'error', text: authErrorMessage(error, 'Could not send the code. Please try again.') })
+        return
+      }
+      setStep('verify')
+      setCode('')
+      setCooldown(RESEND_SECONDS)
+      setMessage({ type: 'info', text: `We sent a 6-digit code to ${cleanEmail}. Check your spam folder if you don't see it.` })
+    } catch (err) {
+      setMessage({ type: 'error', text: authErrorMessage(err) })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleVerifyOTP = () => {
-    // Mock OTP verification
-    localStorage.setItem('email', formData.email)
-    localStorage.setItem('role', formData.role)
-    localStorage.setItem('isLoggedIn', 'true')
-    alert('✅ Signup successful! Welcome to CAREVIA')
-    navigate('/select-role')
+  const handleVerifyOTP = async () => {
+    if (!/^\d{6,8}$/.test(code)) {
+      setMessage({ type: 'error', text: 'Please enter the 6-digit code from your email.' })
+      return
+    }
+    setLoading(true)
+    setMessage(null)
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: code, type: 'email' })
+      if (error) {
+        const wrong = /expired|invalid/i.test(error.message ?? '')
+        setMessage({ type: 'error', text: wrong ? 'That code is wrong or has expired. Use the latest email, or request a new code.' : authErrorMessage(error) })
+        return
+      }
+      if (data.session) navigate(await resolveHomeAfterAuth(), { replace: true })
+    } catch (err) {
+      setMessage({ type: 'error', text: authErrorMessage(err) })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -100,9 +162,22 @@ export default function Signup() {
               {step === 'email' ? 'Create an account' : 'Verify email'}
             </h3>
             <p style={{ fontSize: 13, color: 'var(--ink2)', margin: 0 }}>
-              {step === 'email' ? 'Select your role and get started' : `Verification code sent to ${formData.email}`}
+              {step === 'email' ? 'Select your role and get started' : `Verification code sent to ${cleanEmail}`}
             </p>
           </div>
+
+          {message && (
+            <div
+              role={message.type === 'error' ? 'alert' : 'status'}
+              style={{
+                marginBottom: 18, padding: '10px 14px', borderRadius: 'var(--r-input)', fontSize: 13, lineHeight: 1.5,
+                background: message.type === 'error' ? '#FDECEC' : 'var(--mist)',
+                color: message.type === 'error' ? '#B42318' : 'var(--navy)',
+              }}
+            >
+              {message.text}
+            </div>
+          )}
 
           {step === 'email' && (
             <>
@@ -117,6 +192,7 @@ export default function Signup() {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="name@example.com"
+                  autoComplete="email"
                 />
               </div>
 
@@ -137,20 +213,36 @@ export default function Signup() {
                 </select>
               </div>
 
+              {needsCompany && (
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 8 }}>
+                    Company name
+                  </label>
+                  <input
+                    className="input"
+                    type="text"
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleInputChange}
+                    placeholder="Your company or organisation"
+                  />
+                </div>
+              )}
+
               <button
                 onClick={handleRequestOTP}
-                disabled={!formData.email || !isValidEmail(formData.email)}
+                disabled={!canSend || loading}
                 className="btn-pill"
                 style={{
                   width: '100%',
                   padding: '13px',
                   fontSize: 14,
-                  opacity: (!formData.email || !isValidEmail(formData.email)) ? 0.6 : 1,
-                  cursor: (!formData.email || !isValidEmail(formData.email)) ? 'not-allowed' : 'pointer',
+                  opacity: (!canSend || loading) ? 0.6 : 1,
+                  cursor: (!canSend || loading) ? 'not-allowed' : 'pointer',
                   marginBottom: 20
                 }}
               >
-                Send verification code
+                {loading ? 'Sending code...' : 'Send verification code'}
               </button>
 
               <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink2)' }}>
@@ -171,8 +263,14 @@ export default function Signup() {
                 <input
                   className="input"
                   type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
                   placeholder="000000"
-                  maxLength="6"
+                  maxLength="8"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  onKeyDown={(e) => e.key === 'Enter' && !loading && handleVerifyOTP()}
                   style={{
                     textAlign: 'center',
                     fontSize: 20,
@@ -183,19 +281,30 @@ export default function Signup() {
 
               <button
                 onClick={handleVerifyOTP}
+                disabled={loading || code.length < 6}
                 className="btn-pill"
                 style={{
                   width: '100%',
                   padding: '13px',
                   fontSize: 14,
-                  marginBottom: 12
+                  marginBottom: 12,
+                  opacity: loading || code.length < 6 ? 0.6 : 1
                 }}
               >
-                Verify & create account
+                {loading ? 'Verifying...' : 'Verify & create account'}
               </button>
 
               <button
-                onClick={() => setStep('email')}
+                onClick={handleRequestOTP}
+                disabled={loading || cooldown > 0}
+                className="btn-soft"
+                style={{ width: '100%', padding: '10px', textAlign: 'center', fontSize: 13, marginBottom: 8, opacity: cooldown > 0 ? 0.6 : 1 }}
+              >
+                {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+              </button>
+
+              <button
+                onClick={() => { setStep('email'); setMessage(null) }}
                 className="btn-soft"
                 style={{
                   width: '100%',

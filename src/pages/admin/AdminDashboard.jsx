@@ -1,197 +1,179 @@
 import { useState } from 'react'
 import Layout from '../../components/Layout'
-import { SURVIVORS, NGOS, ANALYTICS } from '../../data/mockData'
+import { PageHeader, ErrorBanner, Loading, Tag, StatTiles, btn, formatDate } from '../../components/ui'
+import DocumentReviewList from '../../components/DocumentReviewList'
+import { useLiveQuery } from '../../lib/live'
+import { getAdminOverview, setNgoStatus, setRecruiterStatus, setSurvivorStatus } from '../../lib/careers'
+
+function Section({ title, subtitle, count, tint = '#FFFBEB', children }) {
+  return (
+    <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--line)', background: tint }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--navy)', margin: 0 }}>{title}{count !== undefined ? ` (${count})` : ''}</h3>
+        {subtitle && <p style={{ fontSize: 12, color: 'var(--ink2)', margin: '4px 0 0' }}>{subtitle}</p>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+const Empty = ({ text }) => <div style={{ padding: 20, fontSize: 13, color: '#8A97B5' }}>✅ {text}</div>
+const row = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: '1px solid var(--mist)', flexWrap: 'wrap' }
 
 export default function AdminDashboard() {
-  const [approvals, setApprovals] = useState(SURVIVORS.filter(s => s.status === 'pending'))
-  const [approved, setApproved] = useState([])
+  const { data, loading, error, reload, live } = useLiveQuery(getAdminOverview, {
+    tables: ['ngos', 'recruiters', 'survivors', 'job_applications', 'survivor_documents'],
+  })
+  const [busy, setBusy] = useState(null)
 
-  const approve = (id) => {
-    const survivor = approvals.find(s => s.id === id)
-    if (survivor) {
-      setApprovals(approvals.filter(s => s.id !== id))
-      setApproved([...approved, id])
+  const act = async (key, fn) => {
+    setBusy(key)
+    try {
+      await fn()
+      await reload()
+    } catch (err) {
+      window.alert(err.message || 'Something went wrong.')
+    } finally {
+      setBusy(null)
     }
   }
 
-  const reject = (id) => {
-    setApprovals(approvals.filter(s => s.id !== id))
+  const reject = (key, label, fn) => {
+    const reason = window.prompt(`Reason for rejecting ${label}? (shown to them)`, '')
+    if (reason === null) return
+    act(key, () => fn(reason))
   }
 
-  const statItems = [
-    { label: 'Total verified survivors', value: ANALYTICS.totalSurvivors },
-    { label: 'Placed in careers', value: ANALYTICS.placedSurvivors },
-    { label: 'Active partner NGOs', value: ANALYTICS.activeNGOs },
-    { label: 'Registered employers', value: ANALYTICS.activeRecruiters },
-    { label: 'Pending review', value: approvals.length }
-  ]
+  const actions = (key, onApprove, onReject) => (
+    <div style={{ display: 'flex', gap: 6 }}>
+      <button style={btn('success', { opacity: busy === key ? 0.6 : 1 })} disabled={busy === key} onClick={onApprove}>Approve</button>
+      <button style={btn('danger', { opacity: busy === key ? 0.6 : 1 })} disabled={busy === key} onClick={onReject}>Reject</button>
+    </div>
+  )
+
+  if (loading || !data) {
+    return <Layout><PageHeader title="Admin Command Center" live={live} /><ErrorBanner message={error} />{!error && <Loading />}</Layout>
+  }
+
+  const { stats, pending_ngos: ngos, pending_recruiters: recruiters, pending_survivors: survivors, top_skills: skills, ngo_partners: partners } = data
+  const rate = stats.survivors ? Math.round((stats.placed / stats.survivors) * 100) : 0
+  const C = 2 * Math.PI * 40
+  const maxSkill = Math.max(1, ...skills.map((s) => s.count))
 
   return (
     <Layout>
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
-          Platform command center
-        </h2>
-        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
-          System-wide governance, partner approvals, and workforce placement analytics
-        </p>
-      </div>
+      <PageHeader title="Admin command center" subtitle="Platform oversight, approvals and verification" live={live} />
+      <ErrorBanner message={error} />
 
-      {/* Stat Tiles */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
-        {statItems.map((m, idx) => {
-          const cardClass = idx === 0 ? 'card-light' : 'card-dark'
-          return (
-            <div key={m.label} className={cardClass} style={{ padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.85, marginBottom: 12 }}>
-                {m.label}
-              </div>
-              <div style={{ fontSize: 40, fontWeight: 300, lineHeight: 1 }}>
-                {m.value}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      <StatTiles stats={[
+        { label: 'Total survivors', value: stats.survivors },
+        { label: 'Placed', value: stats.placed },
+        { label: 'Active NGOs', value: stats.active_ngos },
+        { label: 'Recruiters', value: stats.recruiters },
+        { label: 'Pending reviews', value: stats.pending },
+      ]} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, marginBottom: 24 }}>
-        {/* Pending approvals queue */}
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h3 style={{ color: 'var(--navy)', margin: 0 }}>
-                Pending candidate approvals
-              </h3>
-              <p style={{ fontSize: 12, color: 'var(--ink2)', margin: '4px 0 0' }}>
-                Review and approve candidate submissions
-              </p>
-            </div>
-            <span className="badge">
-              {approvals.length} pending
-            </span>
-          </div>
-
-          {approvals.length === 0 ? (
-            <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <h3 style={{ color: 'var(--navy)', marginBottom: 8 }}>All submissions reviewed</h3>
-              <p style={{ color: 'var(--ink2)', fontSize: 13, margin: 0 }}>
-                There are no pending approvals in the review queue.
-              </p>
-            </div>
-          ) : (
-            <div>
-              {approvals.map(s => (
-                <div
-                  key={s.id}
-                  style={{
-                    padding: '18px 24px',
-                    borderBottom: '1px solid var(--line)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 16,
-                    flexWrap: 'wrap'
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--navy)', marginBottom: 2 }}>
-                      {s.name}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
-                      Partner: {s.ngo} · Completeness: {s.completeness}%
-                    </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)', gap: 20 }}>
+        <div style={{ minWidth: 0 }}>
+          <Section title="🤝 NGO registrations" subtitle="Approving an NGO lets it add survivors and verify documents" count={ngos.length}>
+            {ngos.length === 0 ? <Empty text="No NGOs waiting for approval." /> : ngos.map((n) => (
+              <div key={n.id} style={row}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)' }}>{n.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
+                    {[n.contact_email, n.contact_phone, [n.city, n.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <button
-                      className="btn-pill"
-                      style={{ padding: '8px 16px', fontSize: 12 }}
-                      onClick={() => approve(s.id)}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="btn-soft"
-                      onClick={() => reject(s.id)}
-                    >
-                      Reject
-                    </button>
+                  <div style={{ fontSize: 11, color: '#8A97B5' }}>
+                    {n.registration_number ? `Reg. ${n.registration_number} · ` : ''}{n.website ? `${n.website} · ` : ''}submitted {formatDate(n.created_at)}
                   </div>
+                  {n.description && <div style={{ fontSize: 12, color: 'var(--ink)', marginTop: 4, maxWidth: 520 }}>{n.description}</div>}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                {actions(`ngo:${n.id}`,
+                  () => act(`ngo:${n.id}`, () => setNgoStatus(n.id, 'approved')),
+                  () => reject(`ngo:${n.id}`, n.name, (r) => setNgoStatus(n.id, 'rejected', r)))}
+              </div>
+            ))}
+          </Section>
 
-        {/* NGO partner overview */}
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ color: 'var(--navy)', margin: 0 }}>
-              NGO partner organizations
-            </h3>
-            <span className="badge">
-              {NGOS.length} registered
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {NGOS.slice(0, 4).map(ngo => (
-              <div
-                key={ngo.id}
-                style={{
-                  padding: '12px 16px',
-                  borderRadius: 'var(--r-input)',
-                  background: 'var(--bg)',
-                  border: '1px solid var(--line)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
+          <Section title="🔎 Recruiter verification" subtitle="Verified recruiters are marked as trusted employers" count={recruiters.length}>
+            {recruiters.length === 0 ? <Empty text="No recruiters waiting for verification." /> : recruiters.map((r) => (
+              <div key={r.id} style={row}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--navy)' }}>
-                    {ngo.name}
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)' }}>{r.company_name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink2)' }}>{[r.email, r.company_website].filter(Boolean).join(' · ')} · joined {formatDate(r.created_at)}</div>
+                </div>
+                {actions(`rec:${r.id}`,
+                  () => act(`rec:${r.id}`, () => setRecruiterStatus(r.id, 'approved')),
+                  () => act(`rec:${r.id}`, () => setRecruiterStatus(r.id, 'rejected')))}
+              </div>
+            ))}
+          </Section>
+
+          <Section title="👤 Survivor profiles awaiting verification" count={survivors.length}>
+            {survivors.length === 0 ? <Empty text="All survivor profiles reviewed." /> : survivors.map((s) => (
+              <div key={s.id} style={row}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)' }}>
+                    {s.full_name || s.anonymous_id} <span style={{ fontSize: 11, color: '#8A97B5', fontWeight: 400 }}>{s.anonymous_id}</span>
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
-                    {ngo.survivors} registered candidates
+                    {s.ngo_name ?? 'Self-registered'}{s.city || s.state ? ` · ${[s.city, s.state].filter(Boolean).join(', ')}` : ''} · profile {s.profile_completion}%
                   </div>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>{s.skills.slice(0, 4).map((x) => <Tag key={x}>{x}</Tag>)}</div>
                 </div>
-                <span className="badge" style={{ background: 'var(--mist)', color: 'var(--navy)' }}>
-                  {ngo.placed} placed
-                </span>
+                {actions(`sv:${s.id}`,
+                  () => act(`sv:${s.id}`, () => setSurvivorStatus(s.id, 'approved')),
+                  () => reject(`sv:${s.id}`, 'this profile', (r) => setSurvivorStatus(s.id, 'rejected', r)))}
+              </div>
+            ))}
+          </Section>
+
+          <Section title="📄 Documents awaiting verification" tint="var(--mist)">
+            <DocumentReviewList compact />
+          </Section>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="card" style={{ padding: 20 }}>
+            <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)', marginBottom: 14 }}>Placement Rate</h4>
+            <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto 16px' }}>
+              <svg width="100" height="100" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--line)" strokeWidth="10" />
+                {rate > 0 && <circle cx="50" cy="50" r="40" fill="none" stroke="var(--navy)" strokeWidth="10" strokeDasharray={`${C * rate / 100} ${C}`} strokeLinecap="round" />}
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--navy)', }}>{rate}%</div>
+                <div style={{ fontSize: 10, color: 'var(--ink2)' }}>Placed</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--ink2)', textAlign: 'center' }}>{stats.placed} of {stats.survivors} survivors employed</div>
+          </div>
+
+          <div className="card" style={{ padding: 20 }}>
+            <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)', marginBottom: 12 }}>NGO Partners</h4>
+            {partners.length === 0 ? <div style={{ fontSize: 12, color: '#8A97B5' }}>No approved NGOs yet.</div> : partners.map((n) => (
+              <div key={n.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', fontSize: 12, borderBottom: '1px solid var(--mist)' }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--navy)' }}>{n.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink2)' }}>{n.survivors} survivor{n.survivors === 1 ? '' : 's'}{n.city ? ` · ${n.city}` : ''}</div>
+                </div>
+                <span style={{ color: 'var(--navy)', fontWeight: 600 }}>{n.placed} placed</span>
               </div>
             ))}
           </div>
 
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-              <span style={{ color: 'var(--ink2)' }}>Aggregate placement rate</span>
-              <span style={{ fontWeight: 500, color: 'var(--navy)' }}>60%</span>
-            </div>
-            <div style={{ height: 6, background: 'var(--mist)', borderRadius: 'var(--r-pill)', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: '60%', background: 'var(--royal)', borderRadius: 'var(--r-pill)' }} />
-            </div>
+          <div className="card" style={{ padding: 20 }}>
+            <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)', marginBottom: 12 }}>Top Survivor Skills</h4>
+            {skills.length === 0 ? <div style={{ fontSize: 12, color: '#8A97B5' }}>No skills recorded yet.</div> : skills.map((s) => (
+              <div key={s.skill} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy)' }}>{s.skill}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--royal)' }}>{s.count}</span>
+                </div>
+                <div className="progress-track"><div className="progress-fill" style={{ width: `${(s.count / maxSkill) * 100}%` }} /></div>
+              </div>
+            ))}
           </div>
-        </div>
-      </div>
-
-      {/* Top skills distribution card */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <h3 style={{ color: 'var(--navy)', marginBottom: 16 }}>
-          Workforce demand distribution
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-          {ANALYTICS.skillDistribution.map(s => (
-            <div key={s.skill}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-                <span style={{ fontWeight: 500, color: 'var(--navy)' }}>{s.skill}</span>
-                <span style={{ color: 'var(--ink2)' }}>{s.count} candidates</span>
-              </div>
-              <div style={{ height: 6, background: 'var(--mist)', borderRadius: 'var(--r-pill)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(s.count / 32) * 100}%`, background: 'var(--royal)', borderRadius: 'var(--r-pill)' }} />
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </Layout>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import Logo from './ui/Logo'
+import { supabase } from '../integrations/supabase/client'
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
@@ -8,8 +9,10 @@ export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const role = localStorage.getItem('role') || 'survivor'
-  const userEmail = localStorage.getItem('email') || 'user@demo.carevia'
+  // AuthGuard stores the real role from user_roles; the DB calls the NGO role "ngo_partner"
+  const storedRole = localStorage.getItem('role') || 'survivor'
+  const role = storedRole === 'ngo_partner' ? 'ngo' : storedRole === 'super_admin' ? 'admin' : storedRole
+  const userEmail = localStorage.getItem('email') || ''
 
   useEffect(() => {
     const checkMobile = () => {
@@ -32,7 +35,8 @@ export default function Layout({ children }) {
     setMobileMenuOpen(false)
   }, [location.pathname])
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
     localStorage.clear()
     navigate('/')
   }
@@ -172,6 +176,30 @@ export default function Layout({ children }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        )
+      },
+      {
+        id: 'jobs',
+        label: 'Job Postings',
+        path: '/recruiter/jobs',
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+        )
+      },
+      {
+        id: 'applicants',
+        label: 'Applicants',
+        path: '/recruiter/applicants',
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
         )
       },
@@ -518,11 +546,11 @@ export default function Layout({ children }) {
           {/* Right: Role Switcher / Profile Pill Button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button
-              onClick={() => navigate('/select-role')}
-              className="cv-pill"
+              onClick={handleLogout}
+              className="cv-soft"
               style={{ fontSize: 13, padding: '9px 18px' }}
             >
-              Switch Portal
+              Sign out
             </button>
           </div>
         </header>

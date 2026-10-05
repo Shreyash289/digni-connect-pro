@@ -1,89 +1,94 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../integrations/supabase/client'
+import { resolveHomeAfterAuth } from '../lib/roles'
+import { authErrorMessage } from '../lib/auth-errors'
 import logoNavy from '../assets/carevia-logo-navy.png'
+
+const RESEND_SECONDS = 60
 
 export default function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
   const [step, setStep] = useState('email')
   const [loading, setLoading] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const [message, setMessage] = useState(() =>
+    new URLSearchParams(window.location.search).has('suspended')
+      ? { type: 'error', text: 'Your account has been suspended. Please contact the CAREVIA team.' }
+      : null
+  )
 
-  const demoAccounts = {
-    survivor: { email: 'survivor@demo.carevia', label: 'Survivor Demo' },
-    recruiter: { email: 'recruiter@demo.carevia', label: 'Recruiter Demo' },
-    ngo: { email: 'ngo@demo.carevia', label: 'NGO Demo' },
-    admin: { email: 'admin@demo.carevia', label: 'Admin Demo' }
-  }
+  const isValidEmail = (emailStr) => /\S+@\S+\.\S+/.test(emailStr)
+  const cleanEmail = email.trim().toLowerCase()
 
-  const isValidEmail = (emailStr) => {
-    return emailStr.includes('@') && emailStr.includes('.')
-  }
+  // Already signed in? Go straight to the right portal.
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) navigate(await resolveHomeAfterAuth(), { replace: true })
+    })
+  }, [navigate])
 
-  const handleDemoLogin = (role) => {
-    const demoEmail = demoAccounts[role].email
-    setEmail(demoEmail)
-    localStorage.setItem('email', demoEmail)
-    localStorage.setItem('role', role)
-    localStorage.setItem('isLoggedIn', 'true')
-    navigate('/select-role')
-  }
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldown])
 
   const handleRequestOTP = async () => {
-    if (!email || !isValidEmail(email)) {
-      alert('Please enter a valid email')
+    if (!isValidEmail(cleanEmail)) {
+      setMessage({ type: 'error', text: 'Please enter a valid email address.' })
       return
     }
-
+    setLoading(true)
+    setMessage(null)
     try {
-      setLoading(true)
       const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-        },
+        email: cleanEmail,
+        // Sign-in only: new accounts are created on the Create account page,
+        // where the role is chosen.
+        options: { shouldCreateUser: false },
       })
-
       if (error) {
-        alert('❌ Failed to send OTP: ' + error.message)
+        const raw = error.message?.toLowerCase() ?? ''
+        if (raw.includes('signups not allowed') || raw.includes('user not found')) {
+          setMessage({ type: 'error', text: 'No account found for this email. Please create an account first.' })
+        } else {
+          setMessage({ type: 'error', text: authErrorMessage(error, 'Could not send the code. Please try again.') })
+        }
         return
       }
-
       setStep('otp')
-      alert('✅ OTP sent to ' + email + ' (check spam folder too)')
-    } catch (error) {
-      alert('❌ Error: ' + error.message)
+      setCode('')
+      setCooldown(RESEND_SECONDS)
+      setMessage({ type: 'info', text: `We sent a 6-digit code to ${cleanEmail}. Check your spam folder if you don't see it.` })
+    } catch (err) {
+      setMessage({ type: 'error', text: authErrorMessage(err) })
     } finally {
       setLoading(false)
     }
   }
 
   const handleOTPVerify = async () => {
-    const otpInput = document.querySelector('input[maxLength="6"]')?.value
-
-    if (!otpInput || otpInput.length !== 6) {
-      alert('Please enter 6-digit OTP')
+    if (!/^\d{6,8}$/.test(code)) {
+      setMessage({ type: 'error', text: 'Please enter the 6-digit code from your email.' })
       return
     }
-
+    setLoading(true)
+    setMessage(null)
     try {
-      setLoading(true)
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: otpInput,
-        type: 'email',
-      })
-
+      const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: code, type: 'email' })
       if (error) {
-        alert('❌ Invalid or expired OTP: ' + error.message)
+        // Best-effort entry in the admin audit log; never blocks the UI
+        supabase.rpc('log_failed_login', { _email: cleanEmail }).then(() => {}, () => {})
+        const wrong = /expired|invalid/i.test(error.message ?? '')
+        setMessage({ type: 'error', text: wrong ? 'That code is wrong or has expired. Use the latest email, or request a new code.' : authErrorMessage(error) })
         return
       }
-
-      if (data.session) {
-        navigate('/select-role')
-      }
-    } catch (error) {
-      alert('❌ Error: ' + error.message)
+      if (data.session) navigate(await resolveHomeAfterAuth(), { replace: true })
+    } catch (err) {
+      setMessage({ type: 'error', text: authErrorMessage(err) })
     } finally {
       setLoading(false)
     }
@@ -223,9 +228,22 @@ export default function Login() {
                   {step === 'email' ? 'Welcome back' : 'Verify one-time passcode'}
                 </h3>
                 <p style={{ fontSize: 13, color: 'var(--ink2)', margin: 0 }}>
-                  {step === 'email' ? 'Sign in to access your portal' : `Enter the 6-digit code sent to ${email}`}
+                  {step === 'email' ? 'Sign in to access your portal' : `Enter the 6-digit code sent to ${cleanEmail}`}
                 </p>
               </div>
+
+              {message && (
+                <div
+                  role={message.type === 'error' ? 'alert' : 'status'}
+                  style={{
+                    marginBottom: 18, padding: '10px 14px', borderRadius: 'var(--r-input)', fontSize: 13, lineHeight: 1.5,
+                    background: message.type === 'error' ? '#FDECEC' : 'var(--mist)',
+                    color: message.type === 'error' ? '#B42318' : 'var(--navy)',
+                  }}
+                >
+                  {message.text}
+                </div>
+              )}
 
               {step === 'email' && (
                 <>
@@ -238,50 +256,27 @@ export default function Login() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && !loading && handleRequestOTP()}
                       placeholder="name@example.com"
+                      autoComplete="email"
                     />
                   </div>
 
                   <button
                     onClick={handleRequestOTP}
-                    disabled={!email || !isValidEmail(email) || loading}
+                    disabled={!isValidEmail(cleanEmail) || loading}
                     className="btn-pill"
                     style={{
                       width: '100%',
                       padding: '13px',
                       fontSize: 14,
-                      opacity: (!email || !isValidEmail(email) || loading) ? 0.6 : 1,
-                      cursor: (!email || !isValidEmail(email) || loading) ? 'not-allowed' : 'pointer',
+                      opacity: (!isValidEmail(cleanEmail) || loading) ? 0.6 : 1,
+                      cursor: (!isValidEmail(cleanEmail) || loading) ? 'not-allowed' : 'pointer',
                       marginBottom: 24
                     }}
                   >
                     {loading ? 'Sending code...' : 'Continue with Email'}
                   </button>
-
-                  {/* QUICK DEMO BUTTONS IN 2x2 GRID */}
-                  <div style={{ borderTop: '1px solid var(--line)', paddingTop: 20, marginBottom: 20 }}>
-                    <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink2)', marginBottom: 12, textAlign: 'center' }}>
-                      EXPLORE DEMO PORTALS
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-                      {Object.entries(demoAccounts).map(([roleKey, account]) => (
-                        <button
-                          key={roleKey}
-                          onClick={() => handleDemoLogin(roleKey)}
-                          className="btn-soft"
-                          style={{
-                            width: '100%',
-                            textAlign: 'center',
-                            padding: '10px 8px',
-                            fontSize: 12,
-                            fontWeight: 500
-                          }}
-                        >
-                          {account.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
                   <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink2)' }}>
                     Don't have an account?{' '}
@@ -301,8 +296,14 @@ export default function Login() {
                     <input
                       className="input"
                       type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      autoFocus
                       placeholder="000000"
-                      maxLength="6"
+                      maxLength="8"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                      onKeyDown={(e) => e.key === 'Enter' && !loading && handleOTPVerify()}
                       style={{
                         textAlign: 'center',
                         fontSize: 20,
@@ -313,21 +314,30 @@ export default function Login() {
 
                   <button
                     onClick={handleOTPVerify}
-                    disabled={loading}
+                    disabled={loading || code.length < 6}
                     className="btn-pill"
                     style={{
                       width: '100%',
                       padding: '13px',
                       fontSize: 14,
                       marginBottom: 12,
-                      opacity: loading ? 0.6 : 1
+                      opacity: loading || code.length < 6 ? 0.6 : 1
                     }}
                   >
                     {loading ? 'Verifying...' : 'Verify and continue'}
                   </button>
 
                   <button
-                    onClick={() => setStep('email')}
+                    onClick={handleRequestOTP}
+                    disabled={loading || cooldown > 0}
+                    className="btn-soft"
+                    style={{ width: '100%', padding: '10px', textAlign: 'center', fontSize: 13, marginBottom: 8, opacity: cooldown > 0 ? 0.6 : 1 }}
+                  >
+                    {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+                  </button>
+
+                  <button
+                    onClick={() => { setStep('email'); setMessage(null) }}
                     className="btn-soft"
                     style={{
                       width: '100%',

@@ -1,188 +1,112 @@
 import Layout from '../../components/Layout'
+import { PageHeader, ErrorBanner, Loading, StatTiles } from '../../components/ui'
+import { useLiveQuery } from '../../lib/live'
+import { getAdminAnalytics, timeAgo } from '../../lib/careers'
+import { listAuditLogs, describeAuditAction } from '../../lib/admin'
+
+async function load() {
+  const [stats, logs] = await Promise.all([getAdminAnalytics(), listAuditLogs(8)])
+  return { stats, logs }
+}
+
+const SERIES = [
+  { key: 'signups', label: 'Sign-ups', color: 'var(--royal)' },
+  { key: 'applications', label: 'Applications', color: 'var(--royal)' },
+  { key: 'placements', label: 'Placements', color: 'var(--navy)' },
+]
 
 export default function Analytics() {
-  const kpiData = [
-    { label: 'Registered candidates', value: '2,450', change: '+12% month-over-month' },
-    { label: 'Verified career placements', value: '248', change: '+8% month-over-month' },
-    { label: 'Active employer postings', value: '156', change: 'Steady volume' },
-    { label: 'Placement retention rate', value: '94%', change: '+2% month-over-month' }
-  ]
+  const { data, loading, error, live } = useLiveQuery(load, {
+    tables: ['audit_logs', 'job_applications', 'jobs', 'user_roles'],
+  })
 
-  const monthlyPlacements = [
-    { month: 'Jan', value: 40 },
-    { month: 'Feb', value: 55 },
-    { month: 'Mar', value: 65 },
-    { month: 'Apr', value: 75 },
-    { month: 'May', value: 82 },
-    { month: 'Jun', value: 88 },
-    { month: 'Jul', value: 92 }
-  ]
+  if (loading || !data) {
+    return <Layout><PageHeader title="📊 Analytics" live={live} /><ErrorBanner message={error} />{!error && <Loading />}</Layout>
+  }
 
-  const userDistribution = [
-    { label: 'Survivors / Candidates', value: 1200, percent: 50 },
-    { label: 'Recruiters / Employers', value: 850, percent: 35 },
-    { label: 'NGO / Community Partners', value: 400, percent: 15 }
+  const { stats: a, logs } = data
+  const monthly = a.monthly ?? []
+  const peak = Math.max(1, ...monthly.flatMap((m) => SERIES.map((s) => m[s.key])))
+  const roles = [
+    { label: 'Survivors', value: a.users_by_role.survivor, color: 'var(--royal)' },
+    { label: 'Recruiters', value: a.users_by_role.recruiter, color: 'var(--navy)' },
+    { label: 'NGO Partners', value: a.users_by_role.ngo_partner, color: '#D97706' },
+    { label: 'Admins', value: a.users_by_role.admin, color: 'var(--royal)' },
+    { label: 'No role yet', value: a.users_by_role.none, color: '#8A97B5' },
   ]
-
-  const recentMilestones = [
-    { activity: '5 verified survivor candidate registrations', time: '2 hours ago' },
-    { activity: '12 applications submitted to partner companies', time: '4 hours ago' },
-    { activity: '3 successful career placements confirmed', time: '1 day ago' },
-    { activity: 'Automated compliance security audit completed', time: '2 days ago' }
-  ]
+  const maxRole = Math.max(1, ...roles.map((r) => r.value))
 
   return (
     <Layout>
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>
-          Platform analytics
-        </h2>
-        <p style={{ color: 'var(--ink2)', margin: 0, fontSize: 14 }}>
-          Comprehensive performance metrics, placement trends, and platform engagement
-        </p>
-      </div>
+      <PageHeader title="Analytics" subtitle="Platform insights and performance metrics" live={live} />
+      <ErrorBanner message={error} />
 
-      {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 28 }}>
-        {kpiData.map((kpi, idx) => {
-          const cardClass = idx === 0 ? 'card-light' : idx % 2 === 1 ? 'card-dark' : 'card'
-          return (
-            <div key={kpi.label} className={cardClass} style={{ padding: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.85, marginBottom: 8 }}>
-                {kpi.label}
-              </div>
-              <div style={{ fontSize: 36, fontWeight: 300, lineHeight: 1, marginBottom: 8 }}>
-                {kpi.value}
-              </div>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>
-                {kpi.change}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      <StatTiles stats={[
+        { label: 'Total users', value: a.total_users, note: `+${a.new_users_30d} in the last 30 days` },
+        { label: 'Placements', value: a.placements, note: `${a.survivors} survivors on the platform` },
+        { label: 'Active jobs', value: a.active_jobs, note: `${a.applications} applications in total` },
+        { label: 'Hire rate', value: `${a.hire_rate}%`, note: `${a.interviews} interviews held or scheduled` },
+      ]} />
 
-      {/* Charts Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 24 }}>
-        {/* Monthly Placements Bar Chart */}
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h3 style={{ color: 'var(--navy)', margin: 0 }}>
-              Monthly placement growth
-            </h3>
-            <span className="badge">
-              2025 Trend
-            </span>
-          </div>
-
-          <div style={{ borderBottom: '1px solid var(--line)', paddingBottom: 12, marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, height: 200, position: 'relative' }}>
-              {/* Horizontal gridlines */}
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, borderTop: '1px dashed var(--line)' }} />
-              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px dashed var(--line)' }} />
-
-              {monthlyPlacements.map((item) => (
-                <div
-                  key={item.month}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    height: '100%',
-                    justifyContent: 'flex-end',
-                    zIndex: 2
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '100%',
-                      maxWidth: 36,
-                      height: `${item.value}%`,
-                      background: 'var(--royal)',
-                      borderTopLeftRadius: 8,
-                      borderTopRightRadius: 8,
-                      transition: 'height 0.3s'
-                    }}
-                    title={`${item.month}: ${item.value} placements`}
-                  />
-                </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>📈 Last 6 months</div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              {SERIES.map((s) => (
+                <span key={s.key} style={{ fontSize: 11, color: 'var(--ink2)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color }} />{s.label}
+                </span>
               ))}
             </div>
           </div>
-
-          {/* Month labels */}
-          <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: 12, color: 'var(--ink2)' }}>
-            {monthlyPlacements.map(item => (
-              <span key={item.month}>{item.month}</span>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 180 }}>
+            {monthly.map((m) => (
+              <div key={m.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
+                <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 2 }}>
+                  {SERIES.map((s) => (
+                    <div key={s.key} title={`${m.month} · ${s.label}: ${m[s.key]}`}
+                      style={{ width: '28%', height: `${(m[s.key] / peak) * 100}%`, minHeight: m[s.key] ? 3 : 0, background: s.color, borderRadius: '3px 3px 0 0' }} />
+                  ))}
+                </div>
+                <div style={{ fontSize: 10, color: '#8A97B5', marginTop: 6 }}>{m.month.split(' ')[0]}</div>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* User Distribution Card */}
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h3 style={{ color: 'var(--navy)', margin: 0 }}>
-              User ecosystem distribution
-            </h3>
-            <span className="badge">
-              2,450 Total
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {userDistribution.map((item, i) => {
-              const barColor = i === 0 ? 'var(--royal)' : i === 1 ? 'var(--navy)' : 'var(--sky)'
-              return (
-                <div key={item.label}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-                    <span style={{ fontWeight: 500, color: 'var(--navy)' }}>{item.label}</span>
-                    <span style={{ color: 'var(--ink2)' }}>{item.value} ({item.percent}%)</span>
-                  </div>
-                  <div style={{ height: 8, background: 'var(--mist)', borderRadius: 'var(--r-pill)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${item.percent}%`, background: barColor, borderRadius: 'var(--r-pill)' }} />
-                  </div>
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)', marginBottom: 16 }}>👥 Users by role</div>
+          <div style={{ display: 'grid', gap: 12 }}>
+            {roles.map((r) => (
+              <div key={r.label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink2)' }}>{r.label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)' }}>{r.value}</span>
                 </div>
-              )
-            })}
-          </div>
-
-          <div style={{ marginTop: 24, padding: 14, background: 'var(--bg)', borderRadius: 'var(--r-input)', border: '1px solid var(--line)', fontSize: 12, color: 'var(--ink2)' }}>
-            Verified survivors represent 50% of the active ecosystem membership base.
+                <div style={{ height: 8, background: 'var(--line)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(r.value / maxRole) * 100}%`, background: r.color }} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Recent Activity Card */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line)' }}>
-          <h3 style={{ color: 'var(--navy)', margin: 0 }}>
-            Platform milestones & events
-          </h3>
-        </div>
-        <div>
-          {recentMilestones.map((item, i) => (
-            <div
-              key={i}
-              style={{
-                padding: '16px 24px',
-                borderBottom: '1px solid var(--line)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 16,
-                flexWrap: 'wrap'
-              }}
-            >
-              <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>
-                {item.activity}
+      <div className="card" style={{ padding: 20 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)', marginBottom: 16 }}>🔔 Recent activity</div>
+        {logs.length === 0 ? <div style={{ fontSize: 13, color: '#8A97B5' }}>No activity recorded yet.</div> : (
+          <div style={{ display: 'grid', gap: 10 }}>
+            {logs.map((l) => (
+              <div key={l.id} style={{ padding: 12, background: 'var(--bg)', borderRadius: 6, borderLeft: `3px solid ${l.status === 'failed' ? '#DC2626' : 'var(--royal)'}` }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy)' }}>
+                  {l.actor_name} — {describeAuditAction(l)}{l.target_label ? `: ${l.target_label}` : ''}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--ink2)', marginTop: 2 }}>{timeAgo(l.created_at)}</div>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
-                {item.time}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </Layout>
   )
