@@ -1,9 +1,11 @@
 <!--
   Sent by signInWithOtp({ email }) when the account already exists (Login page).
 
-  This template MUST render {{ .Token }} and MUST NOT contain {{ .ConfirmationURL }}.
-  Supabase decides between "6-digit code" and "click-to-sign-in link" purely by
-  what this template references — the client code cannot force either one.
+  Must reference the Token field and must NOT reference the ConfirmationURL
+  field: Supabase decides between "6-digit code" and "click-to-sign-in link"
+  purely by what this template references, and the client cannot force either.
+  Do not name the ConfirmationURL field here even inside a comment — Go renders
+  template expressions in comments too, which puts a live link back in the email.
 -->
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F6F8FE;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <tr>
