@@ -1,1 +1,27 @@
 project_id = "easluxosukzaruxpooys"
+
+# Email sign-in is OTP-only: the Login and Create account pages both call
+# signInWithOtp() and then verifyOtp() with a 6-digit code typed by the user.
+#
+# Supabase chooses between "6-digit code" and "click-to-sign-in link" based on
+# what these templates reference ({{ .Token }} vs {{ .ConfirmationURL }}), not on
+# anything the client sends. Keep .Token in both templates.
+#
+# These settings apply to `supabase start` (local). The hosted project is a
+# separate store — apply the same change there with:
+#   npm run fix:otp
+# Avoid `supabase config push` for this: it pushes every auth setting in this
+# file, so settings only configured in the dashboard would be reset to defaults.
+[auth.email]
+otp_length = 6
+otp_expiry = 3600
+
+# Existing accounts signing in (Login page).
+[auth.email.template.magic_link]
+subject = "Your CAREVIA sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
+# New accounts being created (Create account page, shouldCreateUser: true).
+[auth.email.template.confirmation]
+subject = "Confirm your CAREVIA email"
+content_path = "./supabase/templates/confirm_signup.html"
