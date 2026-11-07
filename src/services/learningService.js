@@ -23,24 +23,26 @@ const handleQuery = async (queryFn) => {
 }
 
 export const learningService = {
-  // Fetch survivor skills
+  // Skills live on the survivor's profile (survivors.skills) — the same list
+  // recruiters search in Talent Search — returned as [{ skill_name }].
   async getSurvivorSkills(survivorId) {
     if (!survivorId) return { data: [], error: null, unavailable: false }
-    return handleQuery(async () => {
+    const res = await handleQuery(async () => {
       return await supabase
-        .from('survivor_skills')
-        .select('*')
-        .eq('survivor_id', survivorId)
+        .from('survivors')
+        .select('skills')
+        .eq('id', survivorId)
+        .maybeSingle()
     })
+    if (res.error) return res
+    return { ...res, data: (res.data?.skills ?? []).map((skill_name) => ({ skill_name })) }
   },
 
-  // Save/update survivor skills
+  // Replaces the survivor's whole skill list (so removals are saved too)
   async saveSurvivorSkills(skillsPayload) {
+    const skills = (skillsPayload ?? []).map((s) => (typeof s === 'string' ? s : s.skill_name)).filter(Boolean)
     return handleQuery(async () => {
-      return await supabase
-        .from('survivor_skills')
-        .upsert(skillsPayload)
-        .select()
+      return await supabase.rpc('save_my_skills', { _skills: skills })
     })
   },
 

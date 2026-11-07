@@ -3,7 +3,7 @@ import { PageHeader, StatGrid, ErrorBanner, EmptyState, Loading, btn, fieldInput
 import { useLiveQuery } from '../lib/live'
 import { listReviewableDocuments, reviewDocument, openDocument, DOC_STATUS, DOC_TYPES } from '../lib/careers'
 
-const th = { padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6B7280' }
+const th = { padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--ink2)' }
 
 // Shared by NGO "Document Verification" and the admin dashboard.
 // The RPC returns only the documents the current user may review.
@@ -35,7 +35,7 @@ export default function DocumentReviewList({ title = '📄 Document Verification
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#F9FAFB', borderBottom: '0.5px solid #E5E7EB' }}>
+            <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
               <th style={th}>Survivor</th><th style={th}>Document</th><th style={th}>Status</th><th style={th}>Uploaded</th><th style={th}>Action</th>
             </tr>
           </thead>
@@ -44,19 +44,19 @@ export default function DocumentReviewList({ title = '📄 Document Verification
               const st = DOC_STATUS[doc.status] ?? DOC_STATUS.pending
               const busy = busyId === doc.id
               return (
-                <tr key={doc.id} style={{ borderBottom: '0.5px solid #E5E7EB', opacity: busy ? 0.6 : 1 }}>
+                <tr key={doc.id} style={{ borderBottom: '1px solid var(--line)', opacity: busy ? 0.6 : 1 }}>
                   <td style={{ padding: '12px 16px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#0C1F3F' }}>{doc.survivor_name || doc.anonymous_id}</div>
-                    <div style={{ fontSize: 11, color: '#9CA3AF' }}>{doc.ngo_name ?? 'Self-registered'}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)' }}>{doc.survivor_name || doc.anonymous_id}</div>
+                    <div style={{ fontSize: 11, color: '#8A97B5' }}>{doc.ngo_name ?? 'Self-registered'}</div>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <div style={{ fontSize: 13, color: '#374151' }}>{DOC_TYPES[doc.doc_type] ?? doc.doc_type}</div>
-                    <div style={{ fontSize: 11, color: '#9CA3AF', wordBreak: 'break-all' }}>{doc.file_name}</div>
+                    <div style={{ fontSize: 13, color: 'var(--ink)' }}>{DOC_TYPES[doc.doc_type] ?? doc.doc_type}</div>
+                    <div style={{ fontSize: 11, color: '#8A97B5', wordBreak: 'break-all' }}>{doc.file_name}</div>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     <span style={{ padding: '4px 10px', background: st.bg, color: st.color, borderRadius: 6, fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap' }}>{st.label}</span>
                   </td>
-                  <td style={{ padding: '12px 16px', fontSize: 12, color: '#6B7280', whiteSpace: 'nowrap' }}>{formatDate(doc.created_at)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--ink2)', whiteSpace: 'nowrap' }}>{formatDate(doc.created_at)}</td>
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       <button style={btn('ghost')} disabled={busy} onClick={() => act(doc, () => openDocument(doc.storage_path))}>View</button>
@@ -79,7 +79,7 @@ export default function DocumentReviewList({ title = '📄 Document Verification
 
   if (compact) {
     return loading ? <Loading /> : filtered.length === 0
-      ? <div style={{ padding: 20, fontSize: 13, color: '#9CA3AF' }}>✅ No documents waiting for verification.</div>
+      ? <div style={{ padding: 20, fontSize: 13, color: '#8A97B5' }}>✅ No documents waiting for verification.</div>
       : table
   }
 
@@ -88,7 +88,7 @@ export default function DocumentReviewList({ title = '📄 Document Verification
       <PageHeader title={title} subtitle={subtitle} live={live} />
       <StatGrid stats={[
         { label: 'Waiting for review', value: docs.filter((d) => d.status === 'pending').length, color: '#D97706', bg: '#FFFBEB' },
-        { label: 'Verified', value: docs.filter((d) => d.status === 'verified').length, color: '#059669', bg: '#F0FDF4' },
+        { label: 'Verified', value: docs.filter((d) => d.status === 'verified').length, color: 'var(--navy)', bg: 'var(--mist)' },
         { label: 'Rejected', value: docs.filter((d) => d.status === 'rejected').length, color: '#DC2626', bg: '#FEF2F2' },
       ]} />
       <div className="card" style={{ padding: 16, marginBottom: 20 }}>

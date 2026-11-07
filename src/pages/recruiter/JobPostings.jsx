@@ -10,8 +10,8 @@ import {
 } from '../../lib/careers'
 
 const JOB_STATUS = {
-  draft: { label: 'Draft', color: '#6B7280', bg: '#F3F4F6' },
-  published: { label: 'Live', color: '#059669', bg: '#D1FAE5' },
+  draft: { label: 'Draft', color: 'var(--ink2)', bg: 'var(--mist)' },
+  published: { label: 'Live', color: 'var(--navy)', bg: 'var(--mist)' },
   closed: { label: 'Closed', color: '#DC2626', bg: '#FEE2E2' },
 }
 
@@ -56,9 +56,9 @@ export default function JobPostings() {
       />
 
       <StatGrid stats={[
-        { label: 'Live jobs', value: jobs.filter((j) => j.status === 'published').length, color: '#059669', bg: '#F0FDF4' },
-        { label: 'Drafts', value: jobs.filter((j) => j.status === 'draft').length, color: '#6B7280', bg: '#F3F4F6' },
-        { label: 'Total applicants', value: jobs.reduce((n, j) => n + j.applicant_count, 0), color: '#2563EB', bg: '#EFF6FF' },
+        { label: 'Live jobs', value: jobs.filter((j) => j.status === 'published').length, color: 'var(--navy)', bg: 'var(--mist)' },
+        { label: 'Drafts', value: jobs.filter((j) => j.status === 'draft').length, color: 'var(--ink2)', bg: 'var(--mist)' },
+        { label: 'Total applicants', value: jobs.reduce((n, j) => n + j.applicant_count, 0), color: 'var(--royal)', bg: 'var(--mist)' },
         { label: 'New (unreviewed)', value: jobs.reduce((n, j) => n + j.new_count, 0), color: '#D97706', bg: '#FFFBEB' },
       ]} />
 
@@ -81,13 +81,13 @@ export default function JobPostings() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 16, fontWeight: 700, color: '#0C1F3F' }}>{job.title}</span>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{job.title}</span>
                       <span style={{ padding: '3px 9px', background: st.bg, color: st.color, borderRadius: 6, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: '#6B7280' }}>
+                    <div style={{ fontSize: 12, color: 'var(--ink2)' }}>
                       {[job.company_name, jobLocation(job), EMPLOYMENT_TYPES[job.employment_type], salary].filter(Boolean).join(' · ')}
                     </div>
-                    <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+                    <div style={{ fontSize: 11, color: '#8A97B5', marginTop: 4 }}>
                       {job.status === 'published' ? `Published ${formatDate(job.published_at)}` : `Created ${formatDate(job.created_at)}`}
                       {job.closes_at ? ` · Closes ${formatDate(job.closes_at)}` : ''}
                     </div>
@@ -228,7 +228,7 @@ function JobForm({ initial, onClose, onSaved }) {
           <label style={fieldLabel}>Monthly salary to (₹)</label>
           <input type="number" min="0" style={fieldInput} value={form.salary_max} onChange={(e) => set('salary_max', e.target.value)} />
         </div>
-        <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#374151' }}>
+        <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--ink)' }}>
           <input type="checkbox" checked={form.remote_ok} onChange={(e) => set('remote_ok', e.target.checked)} />
           Remote work is possible
         </label>

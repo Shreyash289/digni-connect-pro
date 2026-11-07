@@ -1,0 +1,88 @@
+/* ============ CAREVIA live.css ============
+   Re-skins the classes used by the live-data pages with the redesign's
+   tokens (theme.css), so every page shares one visual language.
+   Loaded last in main.jsx. */
+
+/* Buttons → pills */
+.btn-primary,
+.btn-success,
+.btn-secondary,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--r-pill) !important;
+  font: 600 12px var(--font) !important;
+  padding: 8px 16px !important;
+  cursor: pointer;
+  transition: background-color .2s ease, transform .2s ease;
+}
+.btn-primary { background: var(--navy) !important; color: #fff !important; border: 0 !important; }
+.btn-primary:hover { background: var(--royal) !important; transform: translateY(-1px); }
+.btn-success { background: var(--royal) !important; color: #fff !important; border: 0 !important; }
+.btn-success:hover { background: var(--navy) !important; transform: translateY(-1px); }
+.btn-secondary { background: var(--mist) !important; color: var(--ink) !important; border: 0 !important; }
+.btn-secondary:hover { background: var(--sky) !important; color: var(--ink) !important; }
+.btn-danger { background: #FDECEC !important; color: #B42318 !important; border: 0 !important; }
+.btn-primary:disabled, .btn-success:disabled, .btn-secondary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+/* Stat tiles */
+.stat-card {
+  border-radius: 16px !important;
+  padding: 14px 16px !important;
+  border: 1px solid var(--line) !important;
+  transition: transform .2s ease;
+}
+.stat-card:hover { transform: translateY(-1px); }
+
+/* Tags, badges */
+.skill-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--r-pill) !important;
+  background: var(--mist) !important;
+  color: var(--navy) !important;
+  border: 1px solid transparent !important;
+  padding: 4px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+.skill-tag.selected {
+  background: var(--navy) !important;
+  color: #fff !important;
+}
+.badge-approved { background: var(--navy) !important; color: #fff !important; }
+.badge-pending { background: var(--mist) !important; color: var(--navy) !important; }
+
+/* Form controls */
+.select,
+.input {
+  border-radius: var(--r-input) !important;
+  border: 1px solid var(--line) !important;
+  background: #fff;
+  padding: 10px 14px !important;
+  font-size: 13px !important;
+  color: var(--ink);
+}
+.select:focus, .input:focus {
+  border-color: var(--royal) !important;
+  box-shadow: 0 0 0 3px rgba(47, 91, 234, .12);
+  outline: none;
+}
+
+/* Progress */
+.progress-track { background: var(--mist) !important; border-radius: var(--r-pill) !important; }
+.progress-fill { background: var(--royal) !important; border-radius: var(--r-pill) !important; }
+
+/* Profile wizard steps */
+.step-dot.active { background: var(--royal) !important; color: #fff !important; }
+.step-dot.done { background: var(--navy) !important; color: #fff !important; }
+.step-dot.todo { background: var(--mist) !important; color: var(--ink2) !important; }
+
+/* Tables used on admin/NGO pages */
+.card table th { color: var(--ink2) !important; font-weight: 600 !important; }
+.card table tr { border-color: var(--line) !important; }
+
+/* Headings inside live pages pick up the redesign's navy */
+main h1, main h2 { color: var(--navy) !important; }

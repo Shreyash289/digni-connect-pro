@@ -67,11 +67,11 @@ export default function Applicants() {
       <PageHeader title="👥 Applicants" subtitle="Review who applied, shortlist them, and schedule interviews" live={live} />
 
       <StatGrid stats={[
-        { label: 'Total applicants', value: apps.length, color: '#2563EB', bg: '#EFF6FF' },
+        { label: 'Total applicants', value: apps.length, color: 'var(--royal)', bg: 'var(--mist)' },
         { label: 'New', value: count('submitted'), color: '#D97706', bg: '#FFFBEB' },
-        { label: 'Shortlisted', value: count('shortlisted'), color: '#7C3AED', bg: '#F5F3FF' },
-        { label: 'Interviewing', value: count('interview_scheduled'), color: '#0D9488', bg: '#F0FDFA' },
-        { label: 'Offered / Hired', value: count('offered') + count('hired'), color: '#059669', bg: '#F0FDF4' },
+        { label: 'Shortlisted', value: count('shortlisted'), color: 'var(--royal)', bg: 'var(--mist)' },
+        { label: 'Interviewing', value: count('interview_scheduled'), color: 'var(--royal)', bg: 'var(--mist)' },
+        { label: 'Offered / Hired', value: count('offered') + count('hired'), color: 'var(--navy)', bg: 'var(--mist)' },
       ]} />
 
       <div className="card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -105,15 +105,15 @@ export default function Applicants() {
               onView={() => setViewing(app)}
               footer={
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '8px 10px', background: '#F9FAFB', borderRadius: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--bg)', borderRadius: 8 }}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#0C1F3F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{app.job_title}</div>
-                      <div style={{ fontSize: 11, color: '#9CA3AF' }}>Applied {formatDate(app.applied_at)}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{app.job_title}</div>
+                      <div style={{ fontSize: 11, color: '#8A97B5' }}>Applied {formatDate(app.applied_at)}</div>
                     </div>
                     <StatusPill status={app.status} />
                   </div>
                   {app.interview_status === 'scheduled' && (
-                    <div style={{ fontSize: 12, color: '#0F766E', background: '#F0FDFA', padding: '6px 10px', borderRadius: 6 }}>
+                    <div style={{ fontSize: 12, color: 'var(--navy)', background: 'var(--mist)', padding: '6px 10px', borderRadius: 6 }}>
                       📅 {formatDateTime(app.interview_at)}
                     </div>
                   )}

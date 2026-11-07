@@ -17,8 +17,8 @@ export function NgoGate({ children }) {
   if (!org) {
     return (
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 4 }}>Register your organisation</h1>
-        <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 20 }}>
+        <h2 style={{ color: 'var(--navy)', marginBottom: 6 }}>Register your organisation</h2>
+        <p style={{ fontSize: 14, color: 'var(--ink2)', marginBottom: 20 }}>
           Tell us about your NGO. Once CAREVIA verifies it, you can add survivors, track their progress and verify documents.
         </p>
         <div className="card" style={{ padding: 24 }}>
@@ -33,11 +33,11 @@ export function NgoGate({ children }) {
     const suspended = org.status === 'suspended'
     return (
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
-        <div className="card" style={{ padding: 24, marginBottom: 20, background: rejected || suspended ? '#FEF2F2' : '#FFFBEB', border: `0.5px solid ${rejected || suspended ? '#FECACA' : '#FDE68A'}` }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#0C1F3F', fontFamily: 'Plus Jakarta Sans', marginBottom: 6 }}>
+        <div className="card" style={{ padding: 24, marginBottom: 20, background: rejected || suspended ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${rejected || suspended ? '#FECACA' : '#FDE68A'}` }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--navy)', marginBottom: 6 }}>
             {rejected ? '✕ Registration needs changes' : suspended ? '⛔ Organisation suspended' : '⏳ Awaiting CAREVIA approval'}
           </div>
-          <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.6 }}>
+          <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.6 }}>
             {rejected
               ? <>An admin reviewed <strong>{org.name}</strong> and asked for changes{org.rejection_reason ? `: “${org.rejection_reason}”` : '.'} Update the details below to resubmit.</>
               : suspended
@@ -238,7 +238,7 @@ export function SurvivorFormModal({ survivor, onClose, onSaved }) {
         </div>
         {input('bio', 'About (visible to recruiters)', { full: true, textarea: true })}
         {input('notes', 'Caseworker notes (private to your NGO)', { full: true, textarea: true })}
-        <label style={{ gridColumn: '1 / -1', display: 'flex', gap: 10, fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
+        <label style={{ gridColumn: '1 / -1', display: 'flex', gap: 10, fontSize: 13, color: 'var(--ink)', lineHeight: 1.5 }}>
           <input type="checkbox" checked={form.consent} onChange={(e) => set('consent', e.target.checked)} style={{ marginTop: 3 }} />
           <span>The survivor has agreed to be <strong>visible to recruiters</strong> in Talent Search (first name + last initial, skills and experience only).</span>
         </label>

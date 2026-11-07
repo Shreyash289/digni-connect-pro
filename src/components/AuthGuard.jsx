@@ -66,6 +66,20 @@ export default function AuthGuard({ allow, children }) {
 
       localStorage.setItem('role', matched === 'super_admin' ? 'admin' : matched)
       localStorage.setItem('email', session.user.email ?? '')
+
+      // The Resume / Skills / Courses pages key their data on the survivor
+      // record id ("userId"). Cache it per signed-in account.
+      if (matched === 'survivor' && localStorage.getItem('userIdFor') !== session.user.id) {
+        const { data: survivorId } = await supabase.rpc('get_my_survivor').then(
+          (r) => ({ data: r.data?.id }),
+          () => ({ data: null }),
+        )
+        if (survivorId) {
+          localStorage.setItem('userId', survivorId)
+          localStorage.setItem('userIdFor', session.user.id)
+        }
+      }
+
       if (active) setReady(true)
     }
 

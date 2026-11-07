@@ -54,7 +54,7 @@ export const resumeService = {
     return handleQuery(async () => {
       return await supabase
         .from('survivor_resumes')
-        .upsert(resumePayload)
+        .upsert(resumePayload, { onConflict: 'survivor_id' }) // one resume per survivor
         .select()
         .single()
     })
@@ -65,7 +65,7 @@ export const resumeService = {
     return handleQuery(async () => {
       return await supabase
         .from('survivor_resume_data')
-        .upsert(resumeDataPayload)
+        .upsert(resumeDataPayload, { onConflict: 'resume_id' })
         .select()
         .single()
     })

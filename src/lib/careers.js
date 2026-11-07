@@ -1,5 +1,13 @@
 import { supabase } from '../integrations/supabase/client'
 
+// Colours follow the redesign palette: mist = in progress, royal = active
+// step, navy = positive outcome, soft red = negative.
+const MIST = { color: 'var(--navy)', bg: 'var(--mist)' }
+const ROYAL = { color: '#fff', bg: 'var(--royal)' }
+const NAVY = { color: '#fff', bg: 'var(--navy)' }
+const RED = { color: '#B42318', bg: '#FDECEC' }
+
+
 // Thin wrappers over the RPCs in
 // supabase/migrations/20261001010000_jobs_applications_live.sql
 
@@ -116,17 +124,17 @@ export function journeyStage({ completion = 0, applications = 0, interviews = 0,
 }
 
 export const SURVIVOR_STATUS = {
-  draft: { label: 'Draft', color: '#6B7280', bg: '#F3F4F6' },
-  submitted: { label: 'Awaiting review', color: '#D97706', bg: '#FFFBEB' },
-  under_review: { label: 'Under review', color: '#D97706', bg: '#FFFBEB' },
-  approved: { label: 'Verified', color: '#059669', bg: '#D1FAE5' },
-  rejected: { label: 'Changes needed', color: '#DC2626', bg: '#FEE2E2' },
+  draft: { label: 'Draft', ...MIST },
+  submitted: { label: 'Awaiting review', ...MIST },
+  under_review: { label: 'Under review', ...MIST },
+  approved: { label: 'Verified', ...NAVY },
+  rejected: { label: 'Changes needed', ...RED },
 }
 
 export const DOC_STATUS = {
-  verified: { label: '✓ Verified', bg: '#D1FAE5', color: '#059669' },
-  pending: { label: '⏳ Pending', bg: '#FEF3C7', color: '#D97706' },
-  rejected: { label: '✕ Rejected', bg: '#FEE2E2', color: '#DC2626' },
+  verified: { label: '✓ Verified', ...NAVY },
+  pending: { label: 'Pending', ...MIST },
+  rejected: { label: '✕ Rejected', ...RED },
 }
 
 export const DOC_TYPES = {
@@ -162,17 +170,17 @@ export const EMPLOYMENT_TYPES = {
 }
 
 export const APPLICATION_STATUS = {
-  submitted: { label: 'Applied', color: '#2563EB', bg: '#EFF6FF' },
-  reviewing: { label: 'Under review', color: '#D97706', bg: '#FFFBEB' },
-  shortlisted: { label: 'Shortlisted', color: '#7C3AED', bg: '#F5F3FF' },
-  interview_scheduled: { label: 'Interview', color: '#0D9488', bg: '#F0FDFA' },
-  offered: { label: 'Offered', color: '#059669', bg: '#F0FDF4' },
-  hired: { label: 'Hired', color: '#047857', bg: '#ECFDF5' },
-  rejected: { label: 'Not selected', color: '#DC2626', bg: '#FEF2F2' },
+  submitted: { label: 'Applied', ...MIST },
+  reviewing: { label: 'Under review', ...MIST },
+  shortlisted: { label: 'Shortlisted', ...ROYAL },
+  interview_scheduled: { label: 'Interview', ...ROYAL },
+  offered: { label: 'Offered', ...NAVY },
+  hired: { label: 'Hired', ...NAVY },
+  rejected: { label: 'Not selected', ...RED },
 }
 
 export const statusInfo = (status) =>
-  APPLICATION_STATUS[status] ?? { label: status, color: '#6B7280', bg: '#F3F4F6' }
+  APPLICATION_STATUS[status] ?? { label: status, ...MIST }
 
 export function formatSalary(job) {
   const fmt = (n) => Number(n).toLocaleString('en-IN')
