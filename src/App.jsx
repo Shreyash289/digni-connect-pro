@@ -25,6 +25,11 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import UserManagement from './pages/admin/UserManagement'
 import AuditLogs from './pages/admin/AuditLogs'
 import Analytics from './pages/admin/Analytics'
+import Plans from './pages/billing/Plans'
+import Checkout from './pages/billing/Checkout'
+import PaymentStatus from './pages/billing/PaymentStatus'
+import MySubscription from './pages/billing/MySubscription'
+import SubscriptionGate from './components/SubscriptionGate'
 import LaunchScreen from './components/ui/LaunchScreen'
 
 export default function App() {
@@ -50,22 +55,28 @@ export default function App() {
         <Route path="/survivor/courses" element={<SurvivorCourses />} />
         
         {/* RECRUITER ROUTES */}
-        <Route path="/recruiter" element={<RecruiterDashboard />} />
-        <Route path="/recruiter/search" element={<SearchSurvivors />} />
-        <Route path="/recruiter/shortlisted" element={<SavedCandidates />} />
-        <Route path="/recruiter/interviews" element={<MyInterviews />} />
+        <Route path="/recruiter" element={<SubscriptionGate><RecruiterDashboard /></SubscriptionGate>} />
+        <Route path="/recruiter/search" element={<SubscriptionGate><SearchSurvivors /></SubscriptionGate>} />
+        <Route path="/recruiter/shortlisted" element={<SubscriptionGate><SavedCandidates /></SubscriptionGate>} />
+        <Route path="/recruiter/interviews" element={<SubscriptionGate><MyInterviews /></SubscriptionGate>} />
         
         {/* NGO ROUTES */}
-        <Route path="/ngo" element={<NGODashboard />} />
-        <Route path="/ngo/survivors" element={<ManageSurvivors />} />
-        <Route path="/ngo/progress" element={<ProgressTracking />} />
-        <Route path="/ngo/documents" element={<DocumentVerification />} />
+        <Route path="/ngo" element={<SubscriptionGate><NGODashboard /></SubscriptionGate>} />
+        <Route path="/ngo/survivors" element={<SubscriptionGate><ManageSurvivors /></SubscriptionGate>} />
+        <Route path="/ngo/progress" element={<SubscriptionGate><ProgressTracking /></SubscriptionGate>} />
+        <Route path="/ngo/documents" element={<SubscriptionGate><DocumentVerification /></SubscriptionGate>} />
         
         {/* ADMIN ROUTES */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<UserManagement />} />
         <Route path="/admin/logs" element={<AuditLogs />} />
         <Route path="/admin/analytics" element={<Analytics />} />
+
+        {/* BILLING ROUTES */}
+        <Route path="/billing/plans" element={<Plans />} />
+        <Route path="/billing/checkout" element={<Checkout />} />
+        <Route path="/billing/status" element={<PaymentStatus />} />
+        <Route path="/billing/my-subscription" element={<MySubscription />} />
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import logoNavy from '../assets/carevia-logo-navy.png'
+import ConsentForm from '../components/ConsentForm'
+import { saveConsent } from '../services/consentService'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -11,6 +13,8 @@ export default function Signup() {
     role: 'survivor'
   })
   const [step, setStep] = useState('email') // 'email' or 'verify'
+  const [consentValid, setConsentValid] = useState(false)
+  const [consentData, setConsentData] = useState(null)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -26,16 +30,24 @@ export default function Signup() {
       alert('Please enter a valid email')
       return
     }
+    if (!consentValid) {
+      alert('Please review and accept the required privacy consent to proceed')
+      return
+    }
     localStorage.setItem('tempEmail', formData.email)
     setStep('verify')
   }
 
-  const handleVerifyOTP = () => {
-    // Mock OTP verification
+  const handleVerifyOTP = async () => {
+    // Save consent records
+    if (consentData) {
+      await saveConsent(consentData)
+    }
+
     localStorage.setItem('email', formData.email)
     localStorage.setItem('role', formData.role)
     localStorage.setItem('isLoggedIn', 'true')
-    alert('✅ Signup successful! Welcome to CAREVIA')
+    alert('Signup successful! Welcome to CAREVIA')
     navigate('/select-role')
   }
 
@@ -49,12 +61,16 @@ export default function Signup() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '32px 16px',
-        position: 'relative'
+        padding: '32px 16px'
       }}
     >
-      <div style={{ width: '100%', maxWidth: 480 }}>
-        {/* HERO PANEL */}
+      <div style={{ width: '100%', maxWidth: 540 }}>
+        {/* LOGO */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <img src={logoNavy} alt="CAREVIA" style={{ height: 32 }} />
+        </div>
+
+        {/* HERO HEADER */}
         <div
           style={{
             borderRadius: 'var(--r-hero)',
@@ -66,15 +82,20 @@ export default function Signup() {
             border: '1px solid var(--line)'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
-            <img
-              src={logoNavy}
-              alt="CareVia Logo"
-              style={{ height: 36, width: 'auto', objectFit: 'contain' }}
-            />
-            <span style={{ fontWeight: 500, fontSize: 18, color: 'var(--navy)', letterSpacing: '-0.3px' }}>
-              CAREVIA
-            </span>
+          <div
+            style={{
+              display: 'inline-block',
+              background: 'rgba(255, 255, 255, 0.7)',
+              borderRadius: 'var(--r-pill)',
+              padding: '6px 14px',
+              fontSize: 12,
+              fontWeight: 500,
+              color: 'var(--navy)',
+              marginBottom: 12,
+              backdropFilter: 'blur(4px)'
+            }}
+          >
+            CAREVIA INCLUSIVE COMMUNITY
           </div>
           <h1
             style={{
@@ -137,16 +158,28 @@ export default function Signup() {
                 </select>
               </div>
 
+              {/* DPDP Act Style Consent Notice & Checkboxes */}
+              <div style={{ marginBottom: 22 }}>
+                <ConsentForm
+                  role={formData.role}
+                  mode="compact"
+                  onConsentChange={(c) => {
+                    setConsentValid(c.isValid)
+                    setConsentData(c)
+                  }}
+                />
+              </div>
+
               <button
                 onClick={handleRequestOTP}
-                disabled={!formData.email || !isValidEmail(formData.email)}
+                disabled={!formData.email || !isValidEmail(formData.email) || !consentValid}
                 className="btn-pill"
                 style={{
                   width: '100%',
                   padding: '13px',
                   fontSize: 14,
-                  opacity: (!formData.email || !isValidEmail(formData.email)) ? 0.6 : 1,
-                  cursor: (!formData.email || !isValidEmail(formData.email)) ? 'not-allowed' : 'pointer',
+                  opacity: (!formData.email || !isValidEmail(formData.email) || !consentValid) ? 0.6 : 1,
+                  cursor: (!formData.email || !isValidEmail(formData.email) || !consentValid) ? 'not-allowed' : 'pointer',
                   marginBottom: 20
                 }}
               >
@@ -211,7 +244,7 @@ export default function Signup() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: 'var(--ink2)' }}>
-          Your privacy and personal information are protected by encrypted protocols
+          Your privacy and personal information are protected under DPDP Act implementation guidelines
         </div>
       </div>
     </div>

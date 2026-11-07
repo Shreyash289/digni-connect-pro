@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { ALL_SKILLS } from '../../data/mockData'
+import ConsentForm from '../../components/ConsentForm'
 
-const STEPS = ['Personal details', 'Skills & education', 'Work experience', 'Documents']
+const STEPS = ['Personal details', 'Skills & education', 'Work experience', 'Documents', 'Privacy & consent']
 
 export default function CreateProfile() {
   const [step, setStep] = useState(0)
@@ -225,6 +226,13 @@ export default function CreateProfile() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* STEP 4: Privacy & Consent */}
+          {step === 4 && (
+            <div>
+              <ConsentForm role="survivor" mode="review" />
             </div>
           )}
 
