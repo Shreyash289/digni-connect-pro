@@ -4,6 +4,8 @@ import { supabase } from '../integrations/supabase/client'
 import { resolveHomeAfterAuth } from '../lib/roles'
 import { authErrorMessage } from '../lib/auth-errors'
 import logoNavy from '../assets/carevia-logo-navy.png'
+import ConsentForm from '../components/ConsentForm'
+import { saveConsent } from '../services/consentService'
 
 const RESEND_SECONDS = 60
 // The form uses "ngo"; the database role is "ngo_partner"
@@ -21,6 +23,8 @@ export default function Signup() {
   const [loading, setLoading] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const [message, setMessage] = useState(null)
+  const [consentValid, setConsentValid] = useState(false)
+  const [consentData, setConsentData] = useState(null)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -30,7 +34,7 @@ export default function Signup() {
   const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email)
   const cleanEmail = formData.email.trim().toLowerCase()
   const needsCompany = formData.role === 'recruiter'
-  const canSend = isValidEmail(cleanEmail) && (!needsCompany || formData.companyName.trim().length > 0)
+  const canSend = isValidEmail(cleanEmail) && (!needsCompany || formData.companyName.trim().length > 0) && consentValid
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -45,6 +49,10 @@ export default function Signup() {
   }, [cooldown])
 
   const handleRequestOTP = async () => {
+    if (!consentValid) {
+      setMessage({ type: 'error', text: 'Please review and accept the required privacy consent to proceed.' })
+      return
+    }
     if (!canSend) {
       setMessage({ type: 'error', text: needsCompany && !formData.companyName.trim() ? 'Please enter your company name.' : 'Please enter a valid email address.' })
       return
@@ -93,7 +101,12 @@ export default function Signup() {
         setMessage({ type: 'error', text: wrong ? 'That code is wrong or has expired. Use the latest email, or request a new code.' : authErrorMessage(error) })
         return
       }
-      if (data.session) navigate(await resolveHomeAfterAuth(), { replace: true })
+      if (data.session) {
+        if (consentData) {
+          await saveConsent(consentData)
+        }
+        navigate(await resolveHomeAfterAuth(), { replace: true })
+      }
     } catch (err) {
       setMessage({ type: 'error', text: authErrorMessage(err) })
     } finally {
@@ -115,7 +128,7 @@ export default function Signup() {
         position: 'relative'
       }}
     >
-      <div style={{ width: '100%', maxWidth: 480 }}>
+      <div style={{ width: '100%', maxWidth: 520 }}>
         {/* HERO PANEL */}
         <div
           style={{
@@ -168,9 +181,12 @@ export default function Signup() {
 
           {message && (
             <div
-              role={message.type === 'error' ? 'alert' : 'status'}
               style={{
-                marginBottom: 18, padding: '10px 14px', borderRadius: 'var(--r-input)', fontSize: 13, lineHeight: 1.5,
+                padding: '12px 14px',
+                borderRadius: 'var(--r-input)',
+                fontSize: 13,
+                lineHeight: 1.5,
+                marginBottom: 16,
                 background: message.type === 'error' ? '#FDECEC' : 'var(--mist)',
                 color: message.type === 'error' ? '#B42318' : 'var(--navy)',
               }}
@@ -228,6 +244,18 @@ export default function Signup() {
                   />
                 </div>
               )}
+
+              {/* DPDP Act Style Consent Notice & Checkboxes */}
+              <div style={{ marginBottom: 22 }}>
+                <ConsentForm
+                  role={formData.role}
+                  mode="compact"
+                  onConsentChange={(c) => {
+                    setConsentValid(c.isValid)
+                    setConsentData(c)
+                  }}
+                />
+              </div>
 
               <button
                 onClick={handleRequestOTP}
@@ -320,7 +348,7 @@ export default function Signup() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: 'var(--ink2)' }}>
-          Your privacy and personal information are protected by encrypted protocols
+          Your privacy and personal information are protected under DPDP Act implementation guidelines
         </div>
       </div>
     </div>

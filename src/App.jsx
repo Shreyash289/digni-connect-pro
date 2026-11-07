@@ -26,6 +26,11 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import UserManagement from './pages/admin/UserManagement'
 import AuditLogs from './pages/admin/AuditLogs'
 import Analytics from './pages/admin/Analytics'
+import Plans from './pages/billing/Plans'
+import Checkout from './pages/billing/Checkout'
+import PaymentStatus from './pages/billing/PaymentStatus'
+import MySubscription from './pages/billing/MySubscription'
+import SubscriptionGate from './components/SubscriptionGate'
 import LaunchScreen from './components/ui/LaunchScreen'
 
 const SURVIVOR = ['survivor']
@@ -61,24 +66,30 @@ export default function App() {
         <Route path="/survivor/courses" element={guard(SURVIVOR, <SurvivorCourses />)} />
 
         {/* RECRUITER ROUTES */}
-        <Route path="/recruiter" element={guard(RECRUITER, <RecruiterDashboard />)} />
-        <Route path="/recruiter/jobs" element={guard(RECRUITER, <JobPostings />)} />
-        <Route path="/recruiter/applicants" element={guard(RECRUITER, <Applicants />)} />
-        <Route path="/recruiter/search" element={guard(RECRUITER, <SearchSurvivors />)} />
-        <Route path="/recruiter/shortlisted" element={guard(RECRUITER, <SavedCandidates />)} />
-        <Route path="/recruiter/interviews" element={guard(RECRUITER, <MyInterviews />)} />
+        <Route path="/recruiter" element={guard(RECRUITER, <SubscriptionGate><RecruiterDashboard /></SubscriptionGate>)} />
+        <Route path="/recruiter/jobs" element={guard(RECRUITER, <SubscriptionGate><JobPostings /></SubscriptionGate>)} />
+        <Route path="/recruiter/applicants" element={guard(RECRUITER, <SubscriptionGate><Applicants /></SubscriptionGate>)} />
+        <Route path="/recruiter/search" element={guard(RECRUITER, <SubscriptionGate><SearchSurvivors /></SubscriptionGate>)} />
+        <Route path="/recruiter/shortlisted" element={guard(RECRUITER, <SubscriptionGate><SavedCandidates /></SubscriptionGate>)} />
+        <Route path="/recruiter/interviews" element={guard(RECRUITER, <SubscriptionGate><MyInterviews /></SubscriptionGate>)} />
 
         {/* NGO ROUTES */}
-        <Route path="/ngo" element={guard(NGO, <NGODashboard />)} />
-        <Route path="/ngo/survivors" element={guard(NGO, <ManageSurvivors />)} />
-        <Route path="/ngo/progress" element={guard(NGO, <ProgressTracking />)} />
-        <Route path="/ngo/documents" element={guard(NGO, <DocumentVerification />)} />
+        <Route path="/ngo" element={guard(NGO, <SubscriptionGate><NGODashboard /></SubscriptionGate>)} />
+        <Route path="/ngo/survivors" element={guard(NGO, <SubscriptionGate><ManageSurvivors /></SubscriptionGate>)} />
+        <Route path="/ngo/progress" element={guard(NGO, <SubscriptionGate><ProgressTracking /></SubscriptionGate>)} />
+        <Route path="/ngo/documents" element={guard(NGO, <SubscriptionGate><DocumentVerification /></SubscriptionGate>)} />
 
         {/* ADMIN ROUTES */}
         <Route path="/admin" element={guard(ADMIN, <AdminDashboard />)} />
         <Route path="/admin/users" element={guard(ADMIN, <UserManagement />)} />
         <Route path="/admin/logs" element={guard(ADMIN, <AuditLogs />)} />
         <Route path="/admin/analytics" element={guard(ADMIN, <Analytics />)} />
+
+        {/* BILLING ROUTES */}
+        <Route path="/billing/plans" element={<Plans />} />
+        <Route path="/billing/checkout" element={<Checkout />} />
+        <Route path="/billing/status" element={<PaymentStatus />} />
+        <Route path="/billing/my-subscription" element={<MySubscription />} />
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

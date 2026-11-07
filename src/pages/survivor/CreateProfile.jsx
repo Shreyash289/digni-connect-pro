@@ -3,8 +3,9 @@ import { useNavigate, Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { ErrorBanner, Loading } from '../../components/ui'
 import { getMySurvivor, saveMySurvivorProfile, SKILL_SUGGESTIONS as ALL_SKILLS } from '../../lib/careers'
+import ConsentForm from '../../components/ConsentForm'
 
-const STEPS = ['Personal Details', 'Skills & Education', 'Work Experience', 'Visibility & Documents']
+const STEPS = ['Personal Details', 'Skills & Education', 'Work Experience', 'Documents', 'Privacy & Consent']
 const EDUCATION = ['Class 5 Pass', 'Class 8 Pass', 'Class 10 Pass', 'Class 12 Pass', 'Diploma', 'ITI Certificate', 'Graduate', 'Post Graduate']
 const YEARS = ['Less than 1 year', '1–2 years', '2–3 years', '3–5 years', '5+ years']
 
@@ -112,47 +113,65 @@ export default function CreateProfile() {
 
         {!form ? (!loadError && <Loading label="Loading your profile…" />) : (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32 }}>
-              {STEPS.map((s, i) => (
-                <div key={s} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <div className={`step-dot ${i < step ? 'done' : i === step ? 'active' : 'todo'}`} style={{ cursor: 'pointer' }} onClick={() => setStep(i)}>
-                      {i < step ? '✓' : i + 1}
-                    </div>
-                    <div style={{ fontSize: 11, fontWeight: 500, color: i === step ? 'var(--royal)' : i < step ? 'var(--navy)' : '#8A97B5', whiteSpace: 'nowrap' }}>{s}</div>
-                  </div>
-                  {i < STEPS.length - 1 && <div style={{ flex: 1, height: 2, background: i < step ? 'var(--navy)' : 'var(--line)', margin: '0 8px', marginBottom: 20 }} />}
-                </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, overflowX: 'auto', paddingBottom: 4 }}>
+              {STEPS.map((s, idx) => (
+                <button
+                  key={s}
+                  onClick={() => setStep(idx)}
+                  className="tab-pill"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 999,
+                    border: 'none',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: step === idx ? 'var(--navy)' : 'var(--mist)',
+                    color: step === idx ? '#fff' : 'var(--navy)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {idx + 1}. {s}
+                </button>
               ))}
             </div>
 
-            <div className="card fade-in" style={{ padding: 32 }} key={step}>
+            <div className="card" style={{ padding: 28 }}>
               {step === 0 && (
                 <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'var(--navy)', }}>Personal Details</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'var(--navy)' }}>Personal Details</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    {[
-                      { label: 'Full Name *', key: 'fullName', placeholder: 'Your full name' },
-                      { label: 'Age', key: 'age', placeholder: 'Your age', type: 'number' },
-                      { label: 'City', key: 'city', placeholder: 'Chennai' },
-                      { label: 'State', key: 'state', placeholder: 'Tamil Nadu' },
-                      { label: 'Phone Number (private)', key: 'phone', placeholder: '+91 XXXXX XXXXX' },
-                      { label: 'Languages Spoken', key: 'languages', placeholder: 'Tamil, English, Hindi' },
-                      { label: 'Preferred Job Roles', key: 'jobRole', placeholder: 'Data Entry Operator, Tailor' },
-                      { label: 'Availability', key: 'availability', placeholder: 'Immediately / from next month' },
-                    ].map((f) => (
-                      <div key={f.key}>
-                        <label style={label}>{f.label}</label>
-                        <input className="input" type={f.type ?? 'text'} value={form[f.key]} placeholder={f.placeholder} onChange={(e) => update(f.key, e.target.value)} />
-                      </div>
-                    ))}
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={label}>About you</label>
-                      <textarea className="input" rows={3} placeholder="A few lines about you and the work you're looking for" value={form.bio} onChange={(e) => update('bio', e.target.value)} style={{ resize: 'none' }} />
+                      <label style={label}>Full Name *</label>
+                      <input className="input" value={form.fullName} onChange={(e) => update('fullName', e.target.value)} placeholder="First & Last Name" />
+                    </div>
+                    <div>
+                      <label style={label}>Age</label>
+                      <input className="input" type="number" value={form.age} onChange={(e) => update('age', e.target.value)} placeholder="e.g. 26" />
+                    </div>
+                    <div>
+                      <label style={label}>Phone (Private)</label>
+                      <input className="input" value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="+91 …" />
+                    </div>
+                    <div>
+                      <label style={label}>City</label>
+                      <input className="input" value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="e.g. Bengaluru" />
+                    </div>
+                    <div>
+                      <label style={label}>State</label>
+                      <input className="input" value={form.state} onChange={(e) => update('state', e.target.value)} placeholder="e.g. Karnataka" />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={label}>Special Accommodations / Needs (optional, private)</label>
-                      <textarea className="input" rows={2} placeholder="Any special requirements or accommodations…" value={form.accommodation} onChange={(e) => update('accommodation', e.target.value)} style={{ resize: 'none' }} />
+                      <label style={label}>Languages Spoken</label>
+                      <input className="input" value={form.languages} onChange={(e) => update('languages', e.target.value)} placeholder="Kannada, English, Hindi" />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={label}>Preferred Job Roles (comma-separated)</label>
+                      <input className="input" value={form.jobRole} onChange={(e) => update('jobRole', e.target.value)} placeholder="Data Entry, Retail Sales, Hospitality" />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={label}>About You (Bio)</label>
+                      <textarea className="input" rows={3} value={form.bio} onChange={(e) => update('bio', e.target.value)} placeholder="A brief introduction highlighting your dedication and strengths…" style={{ resize: 'none' }} />
                     </div>
                   </div>
                 </div>
@@ -160,33 +179,46 @@ export default function CreateProfile() {
 
               {step === 1 && (
                 <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'var(--navy)', }}>Skills & Education</h3>
-                  <p style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 20 }}>Select all skills that apply to you. Click to select or deselect.</p>
-                  <div style={{ marginBottom: 24 }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {skillOptions.map((s) => (
-                        <span key={s} className={`skill-tag ${form.selectedSkills.includes(s) ? 'selected' : ''}`} style={{ cursor: 'pointer' }} onClick={() => toggleSkill(s)}>
-                          {form.selectedSkills.includes(s) ? '✓ ' : ''}{s}
-                        </span>
-                      ))}
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'var(--navy)' }}>Skills & Education</h3>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={label}>Select Your Skills</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                      {skillOptions.map((s) => {
+                        const active = form.selectedSkills.includes(s)
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => toggleSkill(s)}
+                            className="tag-pill"
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: 999,
+                              border: 'none',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              background: active ? 'var(--royal)' : 'var(--mist)',
+                              color: active ? '#fff' : 'var(--navy)',
+                            }}
+                          >
+                            {active ? '✓ ' : ''}{s}
+                          </button>
+                        )
+                      })}
                     </div>
-                    {form.selectedSkills.length > 0 && (
-                      <div style={{ marginTop: 12, fontSize: 13, color: 'var(--navy)', fontWeight: 500 }}>
-                        ✓ {form.selectedSkills.length} skill{form.selectedSkills.length > 1 ? 's' : ''} selected
-                      </div>
-                    )}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div>
-                      <label style={label}>Highest Education</label>
+                      <label style={label}>Highest Education Level</label>
                       <select className="select" style={{ width: '100%' }} value={form.education} onChange={(e) => update('education', e.target.value)}>
                         <option value="">Select…</option>
-                        {EDUCATION.map((e) => <option key={e}>{e}</option>)}
+                        {EDUCATION.map((ed) => <option key={ed}>{ed}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label style={label}>Certifications (comma separated)</label>
-                      <input className="input" placeholder="e.g. ITI Certificate, Tally Course" value={form.certification} onChange={(e) => update('certification', e.target.value)} />
+                      <label style={label}>Certifications</label>
+                      <input className="input" value={form.certification} onChange={(e) => update('certification', e.target.value)} placeholder="Basic Computers, Tally…" />
                     </div>
                   </div>
                 </div>
@@ -194,7 +226,7 @@ export default function CreateProfile() {
 
               {step === 2 && (
                 <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'var(--navy)', }}>Work Experience</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'var(--navy)' }}>Work Experience</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div>
                       <label style={label}>Company / Employer</label>
@@ -221,29 +253,29 @@ export default function CreateProfile() {
 
               {step === 3 && (
                 <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: 'var(--navy)', }}>Visibility & Documents</h3>
-                  <label style={{ display: 'flex', gap: 12, padding: 16, borderRadius: 10, cursor: 'pointer', border: `1.5px solid ${form.visible ? 'var(--royal)' : 'var(--line)'}`, background: form.visible ? 'var(--mist)' : '#fff', marginBottom: 20 }}>
-                    <input type="checkbox" checked={form.visible} onChange={(e) => update('visible', e.target.checked)} style={{ marginTop: 3 }} />
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>Visible to recruiters</div>
-                      <div style={{ fontSize: 12, color: 'var(--ink2)', lineHeight: 1.6, marginTop: 2 }}>
-                        Recruiters can find you in Talent Search and invite you to interviews. They see only your first name and last initial,
-                        age, city, skills, education and experience — never your phone, email or documents. You can turn this off at any time.
-                        Recruiters you apply to can always see your profile.
-                      </div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: 'var(--navy)' }}>Documents</h3>
+                  <div style={{ padding: 20, background: 'var(--mist)', borderRadius: 12, border: '1px solid var(--line)', marginBottom: 20 }}>
+                    <div style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 600, marginBottom: 6 }}>Document Vault</div>
+                    <div style={{ fontSize: 13, color: 'var(--ink2)', lineHeight: 1.6, marginBottom: 14 }}>
+                      Your ID, education certificates, and resumes are protected in your encrypted private Document Vault.
+                      Verified employers and partner NGOs can only review documents you explicitly share.
                     </div>
-                  </label>
-                  <div style={{ padding: 16, background: 'var(--mist)', borderRadius: 8, border: '1px solid var(--line)' }}>
-                    <div style={{ fontSize: 13, color: 'var(--navy)', fontWeight: 600, marginBottom: 4 }}>📂 Documents</div>
-                    <div style={{ fontSize: 12, color: 'var(--navy)', marginBottom: 10 }}>Upload your ID, certificates and resume in your private Document Vault.</div>
-                    <Link to="/survivor/docs" style={{ fontSize: 13, fontWeight: 600, color: 'var(--royal)', textDecoration: 'none' }}>Open Document Vault →</Link>
+                    <Link to="/survivor/docs" className="cv-pill" style={{ textDecoration: 'none' }}>
+                      Open Document Vault →
+                    </Link>
                   </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div>
+                  <ConsentForm role="survivor" mode="review" />
                 </div>
               )}
 
               {saved && (
                 <div style={{ position: 'fixed', top: 20, right: 20, background: 'var(--navy)', color: '#fff', padding: '14px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, zIndex: 100, boxShadow: '0 8px 24px rgba(5,150,105,0.3)' }}>
-                  ✅ Profile saved! Redirecting to dashboard…
+                  Profile saved! Redirecting to dashboard…
                 </div>
               )}
 
@@ -256,7 +288,7 @@ export default function CreateProfile() {
                     <button className="btn-primary" onClick={() => setStep((s) => s + 1)}>Next: {STEPS[step + 1]} →</button>
                   )}
                   <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ background: 'var(--navy)', opacity: saving ? 0.6 : 1 }}>
-                    {saving ? 'Saving…' : '✓ Save Profile'}
+                    {saving ? 'Saving…' : 'Save Profile'}
                   </button>
                 </div>
               </div>

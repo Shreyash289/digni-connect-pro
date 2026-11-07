@@ -237,6 +237,17 @@ export default function Layout({ children }) {
           </svg>
         )
       },
+          {
+        id: 'subscription',
+        label: 'Subscription',
+        path: '/billing/my-subscription',
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="20" height="14" x="2" y="5" rx="2"/>
+            <line x1="2" x2="22" y1="10" y2="10"/>
+          </svg>
+        )
+      },
     ],
     ngo: [
       {
@@ -283,6 +294,17 @@ export default function Layout({ children }) {
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <path d="m9 15 2 2 4-4"/>
+          </svg>
+        )
+      },
+          {
+        id: 'subscription',
+        label: 'Subscription',
+        path: '/billing/my-subscription',
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="20" height="14" x="2" y="5" rx="2"/>
+            <line x1="2" x2="22" y1="10" y2="10"/>
           </svg>
         )
       },
@@ -360,7 +382,7 @@ export default function Layout({ children }) {
       {/* Nav items */}
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
         {menu.map((item) => {
-          const isActive = location.pathname === item.path
+          const isActive = location.pathname === item.path || (item.path === '/billing/my-subscription' && location.pathname.startsWith('/billing'))
           return (
             <Link
               key={item.path}
